@@ -1,0 +1,23 @@
+[project]
+name = "bookrec"
+version = "0.1.0"
+description = "2026-2 머신러닝 텀프로젝트 9조 · Goodbooks-10k 기반 도서 추천 시스템"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "scipy",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bookrec"]
