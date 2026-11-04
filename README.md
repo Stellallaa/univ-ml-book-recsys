@@ -23,7 +23,9 @@
 
 - `main`에 직접 push하지 않습니다. 브랜치를 만들어 작업하고 PR로 병합합니다. 브랜치 이름은 `타입/작업ID-설명`으로 짓습니다(예: `feat/b3-content-based`).
 - PR은 다 같이 리뷰할 수 있도록 합니다.
-- 의사결정이나 구현에 관한 질문은 GitHub Issue로 주고받습니다.
+- 작업 카드는 [9조 작업 보드](https://github.com/users/Stellallaa/projects/1)에서 관리합니다. 카드 하나가 Issue 하나이고, 제목은 `[작업ID] 이름`입니다. 작업을 시작하면 카드를 In Progress로 옮깁니다.
+- PR 본문에 `Closes #이슈번호`를 적어 카드와 연결합니다. PR이 머지되면 Issue가 닫히고 카드가 Done으로 옮겨집니다.
+- 의사결정이나 구현에 관한 질문은 해당 카드의 Issue에서 주고받습니다.
 - PR 제목은 `타입(작업 ID): 소문자로 시작하는 짧은 영어 요약`으로 씁니다. 작업 ID는 타임라인의 카드 번호입니다.
 
 | 타입 | 언제 | 예시 |
@@ -34,17 +36,43 @@
 | `docs` | README, `docs/parts/` 정리 자료 | `docs(S2): add MF part summary and script` |
 | `chore` | 환경, 설정, 패키지 추가 | `chore(A1): set up repo with uv, data download, and shared plot style` |
 
+## 테스트
+
+```bash
+uv run pytest
+```
+
+| 규칙 | 내용 |
+| --- | --- |
+| 위치·이름 | `tests/test_<모듈>.py`, 함수는 `test_<무엇을_확인>` |
+| 구조 | 모든 테스트에 `# Given` / `# When` / `# Then` 주석을 답니다 |
+| 대상 | 공개 메서드(`fit`, `score`, `recommend` 등)의 동작을 확인하고, 내부 helper는 직접 테스트하지 않습니다 |
+| 데이터 | 실제 CSV 대신 테스트 안에서 작은 표를 직접 만듭니다. 원본 데이터가 없는 환경에서도 돌아가야 합니다 |
+| 범위 | 공용 코드(`src/bookrec/`)는 테스트를 필수로 하고, 노트북 실험은 제외합니다 |
+| 실행 시점 | PR을 올리기 전에 `uv run pytest`가 통과해야 합니다 |
+
+- `tests/`는 지금은 한 폴더에 둡니다. 테스트가 많아지면 `src/bookrec/`과 같은 폴더 구조로 나눕니다.
+
 ## 폴더 구조
 
-| 경로 | 내용 |
-| --- | --- |
-| `scripts/` | 데이터 다운로드 등 실행 스크립트 |
-| `src/bookrec/` | 팀 공용 코드 (모델, 평가 함수, 그래프 스타일 등) |
-| `notebooks/` | 개인 실험 노트북 |
-| `results/` | 실험 결과 |
-| `docs/parts/` | 발표 준비용 파트별 정리(md) |
-| `docs/figures/` | 발표용 그래프 이미지 |
-| `data/` | 원본·가공 데이터 (커밋하지 않음) |
+각 폴더의 README에 그 폴더에서 하는 작업이 적혀 있습니다.
+
+| 경로 | 내용 | 작업 |
+| --- | --- | --- |
+| `scripts/` | 데이터 다운로드 등 실행 스크립트 | A1 |
+| `src/bookrec/data/` | 전처리, 태그 정제, 데이터 분할, 신규 독자 실험 세트 | A3, B1, A4, A7 |
+| `src/bookrec/models/` | 공통 인터페이스, 인기순 기준선 | A2, A6 |
+| `src/bookrec/models/content_based/` | content-based filtering | B2~B5 |
+| `src/bookrec/models/collaborative_filtering/` | model-based collaborative filtering | C1~C3 |
+| `src/bookrec/models/hybrid/` | hybrid filtering | D3 |
+| `src/bookrec/evaluation/` | 공통 평가 함수, 결과 집계 | A5, D4 |
+| `src/bookrec/plot_style.py` | 공용 그래프 함수 | A1 |
+| `tests/` | 공용 코드 테스트 | 전원 |
+| `notebooks/` | 담당별 실험 노트북 (`data_evaluation/`, `content_based/`, `collaborative_filtering/`, `hybrid/`, `eda/`) | 전원 |
+| `results/` | 담당별 실험 결과·기록 (`data_evaluation/`, `content_based/`, `collaborative_filtering/`, `hybrid/`), 최종 결과표(`final/`) | 전원 |
+| `docs/parts/` | 발표 준비용 파트별 정리(md) | S2 |
+| `docs/figures/` | 발표용 그래프 이미지 | 전원 |
+| `data/` | 원본·가공 데이터 (커밋하지 않음) | - |
 
 ## 그래프 저장
 
