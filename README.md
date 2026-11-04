@@ -19,6 +19,21 @@
 
 패키지를 추가할 때는 `uv add <패키지>`를 쓰고, 바뀐 `pyproject.toml`과 `uv.lock`을 함께 커밋합니다.
 
+## 작업 방식
+
+- `main`에 직접 push하지 않습니다. 브랜치를 만들어 작업하고 PR로 병합합니다. 브랜치 이름은 `타입/작업ID-설명`으로 짓습니다(예: `feat/b3-content-based`).
+- PR은 다 같이 리뷰할 수 있도록 합니다.
+- 의사결정이나 구현에 관한 질문은 GitHub Issue로 주고받습니다.
+- PR 제목은 `타입(작업 ID): 소문자로 시작하는 짧은 영어 요약`으로 씁니다. 작업 ID는 타임라인의 카드 번호입니다.
+
+| 타입 | 언제 | 예시 |
+| --- | --- | --- |
+| `feat` | 모델, 평가 함수, 스크립트 등 기능 추가 | `feat(B3): add content-based recommender` |
+| `fix` | 버그 수정 | `fix(A4): exclude cold-start users from training split` |
+| `exp` | 실험·튜닝 결과(노트북, 결과표) | `exp(C2): tune MF latent factors` |
+| `docs` | README, `docs/parts/` 정리 자료 | `docs(S2): add MF part summary and script` |
+| `chore` | 환경, 설정, 패키지 추가 | `chore(A1): set up repo with uv, data download, and shared plot style` |
+
 ## 폴더 구조
 
 | 경로 | 내용 |
