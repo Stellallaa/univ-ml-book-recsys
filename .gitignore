@@ -1,5 +1,5 @@
 # 원본 데이터는 커밋하지 않는다 (scripts/download_data.py로 받는다)
-data/
+/data/
 
 .venv/
 __pycache__/
