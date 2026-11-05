@@ -4,7 +4,7 @@
 
 | 폴더 | 작업 | 담당 |
 | --- | --- | --- |
-| `data_evaluation/` | 전처리, 분할, 평가 함수, 기준선 확인 | 팀원 A |
+| `data/` | 전처리(`preprocessing/`), 분할, 평가 함수, 기준선 확인 | 팀원 A |
 | `content_based/` | 태그 정제, 책 벡터, CB 설정 비교, 책 군집 | 팀원 B |
 | `collaborative_filtering/` | CF 모델 학습, 튜닝, fold-in | 팀원 C |
 | `hybrid/` | hybrid 구현·튜닝 | 팀원 D |
