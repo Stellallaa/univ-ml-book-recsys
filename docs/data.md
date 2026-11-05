@@ -81,8 +81,8 @@ user_id,book_id,rating
 | `goodreads_book_id` | int | Goodreads의 책 ID(대표 판본). `book_tags.csv`가 쓰는 ID | 0 |
 | `best_book_id` | int | Goodreads가 고른 대표 판본 ID. 97.6%는 `goodreads_book_id`와 같음 | 0 |
 | `work_id` | int | Goodreads의 작품 ID(판본을 묶은 단위) | 0 |
-| `isbn` | str | ISBN-10 | 700 |
-| `isbn13` | float | ISBN-13. 실수로 저장되어 끝자리가 틀린 값이 있음(예: `9780439023480.0`) | 585 |
+| `isbn` | str | 국제 표준 도서 번호(ISBN) 10자리. 판본마다 붙는 책의 바코드 번호 | 700 |
+| `isbn13` | float | ISBN 13자리(2007년부터 쓰는 형식). 원본 CSV에 `9.78043902348e+12`처럼 지수 표기로 저장되어 13번째 자리가 0으로 바뀜(실제 번호는 `9780439023481`). 원본 저장소 [Issue #7](https://github.com/zygmuntz/goodbooks-10k/issues/7)에 보고됨 | 585 |
 
 - Goodreads 주소로 바꿀 수 있습니다: `https://www.goodreads.com/book/show/{goodreads_book_id}`, `https://www.goodreads.com/work/editions/{work_id}`
 - 원본 README에 따르면 `ratings.csv`의 평점은 판본별이 아니라 작품(`work_id`) 단위로 합쳐져 있습니다.
@@ -126,8 +126,8 @@ user_id,book_id,rating
 | 항목 | 값 |
 | --- | --- |
 | 책 한 권의 태그 수 | 최소 56, 중앙값 100, 최대 100 (책마다 많이 붙은 순서로 최대 100개) |
-| `count`가 음수인 행 | 6 (모두 -1) |
-| 같은 (책, 태그) 쌍이 두 번 나오는 행 | 8 |
+| `count`가 음수인 행 | 6 (모두 -1, Kindle 사용 설명서 2권). Goodreads 원본 XML에도 -1로 들어 있음 |
+| 같은 (책, 태그) 쌍이 두 번 나오는 행 | 8쌍 (책 4권). Goodreads 원본 XML에도 두 번 들어 있음(예: 해리 포터 1권 `owned` 6066 / 6065) |
 
 - 태그에는 장르(`fantasy`, `classics`)뿐 아니라 개인 책장 이름(`to-read`, `owned`, `favorites`, `2015-reads` 등)도 섞여 있습니다. `to-read`는 10,000권 중 9,983권에 붙어 있습니다.
 
