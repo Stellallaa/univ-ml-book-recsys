@@ -26,7 +26,7 @@
 - 작업 카드는 [9조 작업 보드](https://github.com/users/Stellallaa/projects/1)에서 관리합니다. 카드 하나가 Issue 하나이고, 제목은 `[작업ID] 이름`입니다. 작업을 시작하면 카드를 In Progress로 옮깁니다.
 - PR 본문에 `Closes #이슈번호`를 적어 카드와 연결합니다. PR이 머지되면 Issue가 닫히고 카드가 Done으로 옮겨집니다.
 - 의사결정이나 구현에 관한 질문은 해당 카드의 Issue에서 주고받습니다.
-- PR 제목은 `타입(작업 ID): 소문자로 시작하는 짧은 영어 요약`으로 씁니다. 작업 ID는 타임라인의 카드 번호입니다.
+- PR 제목은 `타입(작업 ID): 소문자로 시작하는 짧은 영어 요약`으로 씁니다. 작업 ID는 [타임라인](docs/timeline.html)의 카드 번호입니다.
 
 | 타입 | 언제 | 예시 |
 | --- | --- | --- |
@@ -70,6 +70,8 @@ uv run pytest
 | `tests/` | 공용 코드 테스트 | 전원 |
 | `notebooks/` | 담당별 실험 노트북 (`data_evaluation/`, `content_based/`, `collaborative_filtering/`, `hybrid/`, `eda/`) | 전원 |
 | `results/` | 담당별 실험 결과·기록 (`data_evaluation/`, `content_based/`, `collaborative_filtering/`, `hybrid/`), 최종 결과표(`final/`) | 전원 |
+| `docs/data.md` | 원본 데이터 파일·컬럼 설명 | A1 |
+| `docs/timeline.html` | 역할 분담·작업 타임라인 (내려받아 브라우저로 열기) | - |
 | `docs/parts/` | 발표 준비용 파트별 정리(md) | S2 |
 | `docs/figures/` | 발표용 그래프 이미지 | 전원 |
 | `data/` | 원본·가공 데이터 (커밋하지 않음) | - |
