@@ -4,7 +4,7 @@
 
 | 폴더 | 내용 | 담당 |
 | --- | --- | --- |
-| `data_evaluation/` | 기준선 점수, 평가 함수 확인 결과 | 팀원 A |
+| `evaluation/` | 기준선 점수, 평가 함수 확인 결과 | 팀원 A |
 | `content_based/` | CB 설정 비교 기록 | 팀원 B |
 | `collaborative_filtering/` | CF 학습·튜닝 기록 | 팀원 C |
 | `hybrid/` | hybrid 결합 방식·비율 비교 기록 | 팀원 D |
