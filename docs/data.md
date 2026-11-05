@@ -29,7 +29,7 @@ to_read.csv ─┘
 
 ## ratings.csv
 
-독자가 책에 준 별점입니다. 원본 README에 따르면 시간순으로 정렬되어 있습니다. 시각 컬럼은 없습니다.
+독자가 책에 준 별점입니다. 원본 README에 따르면 시간순으로 정렬되어 있습니다. 시각 컬럼은 없습니다. 행은 독자별로 묶여 있지 않고 여러 독자의 평점이 섞여 있습니다. 독자 한 명의 평점이 파일에서 중앙값 52군데로 나뉘어 있습니다.
 
 | 컬럼 | 타입 | 뜻 | 값 범위 | 결측 |
 | --- | --- | --- | --- | --- |
@@ -84,6 +84,7 @@ user_id,book_id,rating
 | `isbn` | str | 국제 표준 도서 번호(ISBN) 10자리. 판본마다 붙는 책의 바코드 번호 | 700 |
 | `isbn13` | float | ISBN 13자리(2007년부터 쓰는 형식). 원본 CSV에 `9.78043902348e+12`처럼 지수 표기로 저장되어 13번째 자리가 0으로 바뀜(실제 번호는 `9780439023481`). 원본 저장소 [Issue #7](https://github.com/zygmuntz/goodbooks-10k/issues/7)에 보고됨 | 585 |
 
+- ISBN은 책 뒤표지 바코드 아래에 있는 국제 표준 도서 번호입니다. 같은 책이라도 판본(양장, 문고판 등)마다 번호가 다릅니다. `isbn`은 옛 형식(10자리), `isbn13`은 2007년부터 쓰는 형식(13자리)입니다.
 - Goodreads 주소로 바꿀 수 있습니다: `https://www.goodreads.com/book/show/{goodreads_book_id}`, `https://www.goodreads.com/work/editions/{work_id}`
 - 원본 README에 따르면 `ratings.csv`의 평점은 판본별이 아니라 작품(`work_id`) 단위로 합쳐져 있습니다.
 
