@@ -68,8 +68,8 @@ uv run pytest
 | `src/bookrec/evaluation/` | 공통 평가 함수, 결과 집계 | A5, D4 |
 | `src/bookrec/plot_style.py` | 공용 그래프 함수 | A1 |
 | `tests/` | 공용 코드 테스트 | 전원 |
-| `notebooks/` | 담당별 실험 노트북 (`data/`, `content_based/`, `collaborative_filtering/`, `hybrid/`, `eda/`) | 전원 |
-| `results/` | 담당별 실험 결과·기록 (`data_evaluation/`, `content_based/`, `collaborative_filtering/`, `hybrid/`), 최종 결과표(`final/`) | 전원 |
+| `notebooks/` | 담당별 실험 노트북 (`data/`, `evaluation/`, `content_based/`, `collaborative_filtering/`, `hybrid/`, `eda/`) | 전원 |
+| `results/` | 담당별 실험 결과·기록 (`evaluation/`, `content_based/`, `collaborative_filtering/`, `hybrid/`), 최종 결과표(`final/`) | 전원 |
 | `docs/data.md` | 원본 데이터 파일·컬럼 설명 | A1 |
 | `docs/timeline.html` | 역할 분담·작업 타임라인 (내려받아 브라우저로 열기) | - |
 | `docs/parts/` | 발표 준비용 파트별 정리(md) | S2 |
