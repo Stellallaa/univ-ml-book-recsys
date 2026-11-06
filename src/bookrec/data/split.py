@@ -8,7 +8,7 @@ import pandas as pd
 
 from bookrec.data.loaders import RAW_DIR, load_ratings
 
-N_COLD_USERS = 2000
+N_COLD_USERS = 5000
 SEED = 42
 # NOTE: 180 * 0.70 = 125.99...처럼 실수 곱이 내림에서 틀어져 정수 백분율로 둔다.
 TRAIN_PERCENT = 70
