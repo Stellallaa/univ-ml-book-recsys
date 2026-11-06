@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 
+from bookrec.data import RatingSplit
 from bookrec.models.base import RatingPredictor, Recommender
 
 RELEVANT_RATING = 4
@@ -40,17 +41,22 @@ def _rank_metrics(recs: dict[int, list[int]], answers: pd.DataFrame, k: int) -> 
 
 def evaluate_warm(
     model: Recommender,
-    history: pd.DataFrame,
-    answers: pd.DataFrame,
+    split: RatingSplit,
+    on: str = "val",
     to_read: pd.DataFrame | None = None,
     n_users: int = N_EVAL_USERS,
     seed: int = SEED,
     k: int = K,
 ) -> pd.Series:
-    """기존 독자 n_users명을 뽑아 Goal 2(정답 = answers의 4점 이상)와 Goal 3(정답 = 이력에 없는 to_read) 지표를 계산한다."""
+    """기존 독자 n_users명으로 Goal 2(정답 = on 구간의 4점 이상)와 Goal 3(정답 = 이력에 없는 to_read) 지표를 계산한다."""
+    if on not in ("val", "test"):
+        raise ValueError(f"on은 'val' 또는 'test'여야 합니다: {on!r}")
+    answers = getattr(split, on)
     users = np.sort(answers["user_id"].unique())
     users = np.random.default_rng(seed).choice(users, size=min(n_users, len(users)), replace=False)
-    history = history[history["user_id"].isin(users)]
+    # NOTE: test 시점의 독자는 val의 책도 이미 읽었으므로 이력에 val을 붙인다.
+    parts = [split.train] if on == "val" else [split.train, split.val]
+    history = pd.concat([part[part["user_id"].isin(users)] for part in parts])
     recs = _recommend(model, history, k)
     metrics = _rank_metrics(recs, answers[answers["rating"] >= RELEVANT_RATING], k)
     result = {
@@ -65,19 +71,22 @@ def evaluate_warm(
         )
         to_read_hit = _rank_metrics(recs, wanted[wanted["_merge"] == "left_only"], k)["precision"]
         result |= {f"to_read_hit@{k}": to_read_hit.mean(), "to_read_users": to_read_hit.count()}
-    return pd.Series(result)
+    return pd.Series(result, dtype=object)
 
 
 def evaluate_cold(
-    model: Recommender, cold_ratings: pd.DataFrame, history_sizes: tuple[int, ...] = COLD_HISTORY_SIZES, k: int = K
+    model: Recommender, split: RatingSplit, on: str = "tune", history_sizes: tuple[int, ...] = COLD_HISTORY_SIZES, k: int = K
 ) -> pd.DataFrame:
-    """신규 독자의 앞 s개 평점을 이력으로 넣어 s마다 Goal 1 지표를 계산한다. 정답은 모든 s에서 max(history_sizes)번째 이후 4점 이상이다."""
+    """신규 독자(on = "tune" 또는 "final")의 앞 s개 평점을 이력으로 넣어 s마다 Goal 1 지표를 계산한다. 정답은 모든 s에서 max(history_sizes)번째 이후 4점 이상이다."""
+    if on not in ("tune", "final"):
+        raise ValueError(f"on은 'tune' 또는 'final'이어야 합니다: {on!r}")
+    cold = getattr(split, f"cold_{on}")
     # NOTE: 파일 순서가 시간순이라 정렬하지 않고 순번을 매긴다.
-    position = cold_ratings.groupby("user_id").cumcount()
-    answers = cold_ratings[(position >= max(history_sizes)) & (cold_ratings["rating"] >= RELEVANT_RATING)]
+    position = cold.groupby("user_id").cumcount()
+    answers = cold[(position >= max(history_sizes)) & (cold["rating"] >= RELEVANT_RATING)]
     rows = {}
     for size in history_sizes:
-        metrics = _rank_metrics(_recommend(model, cold_ratings[position < size], k), answers, k)
+        metrics = _rank_metrics(_recommend(model, cold[position < size], k), answers, k)
         rows[size] = {
             f"precision@{k}": metrics["precision"].mean(),
             f"recall@{k}": metrics["recall"].mean(),
@@ -86,7 +95,10 @@ def evaluate_cold(
     return pd.DataFrame.from_dict(rows, orient="index").rename_axis("history_size")
 
 
-def evaluate_rmse(model: RatingPredictor, ratings: pd.DataFrame) -> float:
-    """ratings(user_id, book_id, rating)의 실제 평점과 model.predict 예측의 RMSE를 계산한다."""
+def evaluate_rmse(model: RatingPredictor, split: RatingSplit, on: str = "val") -> float:
+    """on 구간(val 또는 test)의 실제 별점과 model.predict 예측의 RMSE를 계산한다."""
+    if on not in ("val", "test"):
+        raise ValueError(f"on은 'val' 또는 'test'여야 합니다: {on!r}")
+    ratings = getattr(split, on)
     errors = model.predict(ratings[["user_id", "book_id"]]) - ratings["rating"].to_numpy()
     return float(np.sqrt(np.mean(errors**2)))
