@@ -81,3 +81,4 @@ split.train, split.val, split.test, split.cold_tune, split.cold_final
 
 - 다섯 표를 합치면 원본 5,976,479행과 정확히 같습니다(빠지거나 겹친 행 없음).
 - 뽑는 독자 수와 seed는 `load_split(n_cold_users=..., seed=...)`로 바꿀 수 있습니다. 이미 읽은 평점 표가 있으면 `split_ratings(ratings)`를 씁니다.
+- 나눈 표가 학습과 채점에서 어떻게 쓰이는지는 [`docs/pipeline.md`](../../../docs/pipeline.md)에 있습니다.

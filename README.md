@@ -71,6 +71,7 @@ uv run pytest
 | `notebooks/` | 담당별 실험 노트북 (`data/`, `evaluation/`, `content_based/`, `collaborative_filtering/`, `hybrid/`, `eda/`) | 전원 |
 | `results/` | 담당별 실험 결과·기록 (`evaluation/`, `content_based/`, `collaborative_filtering/`, `hybrid/`), 최종 결과표(`final/`) | 전원 |
 | `docs/data.md` | 원본 데이터 파일·컬럼 설명 | A1 |
+| `docs/pipeline.md` | 데이터 나누기, 모델 학습, 채점까지 전체 흐름 | A4 |
 | `docs/timeline.html` | 역할 분담·작업 타임라인 (내려받아 브라우저로 열기) | - |
 | `docs/parts/` | 발표 준비용 파트별 정리(md) | S2 |
 | `docs/figures/` | 발표용 그래프 이미지 | 전원 |
