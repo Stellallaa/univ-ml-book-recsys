@@ -22,11 +22,12 @@ class Recommender(ABC):
     def score(self, history: pd.DataFrame) -> pd.DataFrame:
         """독자별 평점 이력(user_id, book_id, rating)으로 점수표(행 user_id, 열 BOOK_IDS)를 만든다. 높을수록 추천한다."""
 
-    def recommend(self, history: pd.DataFrame, k: int = 10) -> dict[int, list[int]]:
-        """독자별로 이력에 없는 책 중 점수 상위 k권의 book_id를 돌려준다."""
+    def recommend(self, history: pd.DataFrame, k: int = 10, read: pd.DataFrame | None = None) -> dict[int, list[int]]:
+        """독자별로 이미 읽은 책(read, 없으면 history)을 뺀 점수 상위 k권의 book_id를 돌려준다."""
         scores = self.score(history)
+        read = history if read is None else read
         values = scores.to_numpy(dtype=float, copy=True)
-        values[scores.index.get_indexer(history["user_id"]), scores.columns.get_indexer(history["book_id"])] = -np.inf
+        values[scores.index.get_indexer(read["user_id"]), scores.columns.get_indexer(read["book_id"])] = -np.inf
         top = np.argsort(-values, axis=1, kind="stable")[:, :k]
         return dict(zip(scores.index.tolist(), scores.columns.to_numpy()[top].tolist()))
 

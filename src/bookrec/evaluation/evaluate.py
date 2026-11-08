@@ -13,12 +13,13 @@ COLD_HISTORY_SIZES = (1, 3, 5, 10)
 BATCH_SIZE = 500
 
 
-def _recommend(model: Recommender, history: pd.DataFrame, k: int) -> dict[int, list[int]]:
-    """독자를 BATCH_SIZE명씩 나눠 model.recommend를 부르고 결과를 합친다."""
+def _recommend(model: Recommender, history: pd.DataFrame, read: pd.DataFrame, k: int) -> dict[int, list[int]]:
+    """독자를 BATCH_SIZE명씩 나눠 model.recommend(이력, k, 이미 읽은 책)를 부르고 결과를 합친다."""
     users = history["user_id"].unique()
     recs = {}
     for start in range(0, len(users), BATCH_SIZE):
-        recs |= model.recommend(history[history["user_id"].isin(users[start : start + BATCH_SIZE])], k)
+        batch = users[start : start + BATCH_SIZE]
+        recs |= model.recommend(history[history["user_id"].isin(batch)], k, read[read["user_id"].isin(batch)])
     return recs
 
 
@@ -38,8 +39,8 @@ def _rank_metrics(recs: dict[int, list[int]], answers: pd.DataFrame, k: int) -> 
     return metrics.where(n_answers > 0, axis=0)
 
 
-def _summarize(recs: dict[int, list[int]], answers: pd.DataFrame, history: pd.DataFrame, to_read: pd.DataFrame | None, k: int) -> dict:
-    """추천 목록을 정답(4점 이상)과 to_read(이력에 없는 책)로 채점해 독자 평균과 평균 낸 독자 수를 돌려준다."""
+def _summarize(recs: dict[int, list[int]], answers: pd.DataFrame, read: pd.DataFrame, to_read: pd.DataFrame | None, k: int) -> dict:
+    """추천 목록을 정답(4점 이상)과 to_read(이미 읽은 책 제외)로 채점해 독자 평균과 평균 낸 독자 수를 돌려준다."""
     metrics = _rank_metrics(recs, answers, k)
     result = {
         f"precision@{k}": metrics["precision"].mean(),
@@ -49,7 +50,7 @@ def _summarize(recs: dict[int, list[int]], answers: pd.DataFrame, history: pd.Da
     }
     if to_read is not None:
         wanted = to_read[to_read["user_id"].isin(list(recs))].merge(
-            history[["user_id", "book_id"]], on=["user_id", "book_id"], how="left", indicator=True
+            read[["user_id", "book_id"]], on=["user_id", "book_id"], how="left", indicator=True
         )
         to_read_hit = _rank_metrics(recs, wanted[wanted["_merge"] == "left_only"], k)["precision"]
         result |= {f"to_read_hit@{k}": to_read_hit.mean(), "to_read_users": to_read_hit.count()}
@@ -75,7 +76,7 @@ def evaluate_warm(
     # NOTE: test 시점의 독자는 val의 책도 이미 읽었으므로 이력에 val을 붙인다.
     history = split.train if on == "val" else pd.concat([split.train, split.val])
     history = history[history["user_id"].isin(users)]
-    recs = _recommend(model, history, k)
+    recs = _recommend(model, history, history, k)
     return pd.Series(_summarize(recs, answers[answers["rating"] >= RELEVANT_RATING], history, to_read, k), dtype=object)
 
 
@@ -87,17 +88,21 @@ def evaluate_cold(
     history_sizes: tuple[int, ...] = COLD_HISTORY_SIZES,
     k: int = K,
 ) -> pd.DataFrame:
-    """신규 독자(on = "tune" 또는 "final")의 앞 s개 평점을 이력으로 넣어 s마다 채점한다. 정답은 모든 s에서 max(history_sizes)번째 이후 4점 이상이다."""
+    """신규 독자(on = "tune" 또는 "final")의 앞 s개 평점을 이력으로 넣어 s마다 채점한다.
+
+    모든 s에서 앞 max(history_sizes)개는 이미 읽은 책으로 추천에서 빼고, 그 뒤의 4점 이상을 정답으로 쓴다.
+    """
     if on not in ("tune", "final"):
         raise ValueError(f"on은 'tune' 또는 'final'이어야 합니다: {on!r}")
     cold = getattr(split, f"cold_{on}")
     # NOTE: 파일 순서가 시간순이라 정렬하지 않고 순번을 매긴다.
     position = cold.groupby("user_id").cumcount()
+    read = cold[position < max(history_sizes)]
     answers = cold[(position >= max(history_sizes)) & (cold["rating"] >= RELEVANT_RATING)]
     rows = {}
     for size in history_sizes:
         history = cold[position < size]
-        rows[size] = _summarize(_recommend(model, history, k), answers, history, to_read, k)
+        rows[size] = _summarize(_recommend(model, history, read, k), answers, read, to_read, k)
     return pd.DataFrame.from_dict(rows, orient="index").rename_axis("history_size")
 
 
