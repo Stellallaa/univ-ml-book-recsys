@@ -55,8 +55,8 @@ def evaluate_warm(
     users = np.sort(answers["user_id"].unique())
     users = np.random.default_rng(seed).choice(users, size=min(n_users, len(users)), replace=False)
     # NOTE: test 시점의 독자는 val의 책도 이미 읽었으므로 이력에 val을 붙인다.
-    parts = [split.train] if on == "val" else [split.train, split.val]
-    history = pd.concat([part[part["user_id"].isin(users)] for part in parts])
+    history = split.train if on == "val" else pd.concat([split.train, split.val])
+    history = history[history["user_id"].isin(users)]
     recs = _recommend(model, history, k)
     metrics = _rank_metrics(recs, answers[answers["rating"] >= RELEVANT_RATING], k)
     result = {
