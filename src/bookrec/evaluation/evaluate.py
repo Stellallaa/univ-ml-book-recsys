@@ -8,7 +8,6 @@ from bookrec.models.base import RatingPredictor, Recommender
 
 RELEVANT_RATING = 4
 K = 10
-N_EVAL_USERS = 5000
 SEED = 42
 COLD_HISTORY_SIZES = (1, 3, 5, 10)
 BATCH_SIZE = 500
@@ -39,26 +38,9 @@ def _rank_metrics(recs: dict[int, list[int]], answers: pd.DataFrame, k: int) -> 
     return metrics.where(n_answers > 0, axis=0)
 
 
-def evaluate_warm(
-    model: Recommender,
-    split: RatingSplit,
-    on: str = "val",
-    to_read: pd.DataFrame | None = None,
-    n_users: int = N_EVAL_USERS,
-    seed: int = SEED,
-    k: int = K,
-) -> pd.Series:
-    """기존 독자 n_users명으로 Goal 2(정답 = on 구간의 4점 이상)와 Goal 3(정답 = 이력에 없는 to_read) 지표를 계산한다."""
-    if on not in ("val", "test"):
-        raise ValueError(f"on은 'val' 또는 'test'여야 합니다: {on!r}")
-    answers = getattr(split, on)
-    users = np.sort(answers["user_id"].unique())
-    users = np.random.default_rng(seed).choice(users, size=min(n_users, len(users)), replace=False)
-    # NOTE: test 시점의 독자는 val의 책도 이미 읽었으므로 이력에 val을 붙인다.
-    history = split.train if on == "val" else pd.concat([split.train, split.val])
-    history = history[history["user_id"].isin(users)]
-    recs = _recommend(model, history, k)
-    metrics = _rank_metrics(recs, answers[answers["rating"] >= RELEVANT_RATING], k)
+def _summarize(recs: dict[int, list[int]], answers: pd.DataFrame, history: pd.DataFrame, to_read: pd.DataFrame | None, k: int) -> dict:
+    """추천 목록을 정답(4점 이상)과 to_read(이력에 없는 책)로 채점해 독자 평균과 평균 낸 독자 수를 돌려준다."""
+    metrics = _rank_metrics(recs, answers, k)
     result = {
         f"precision@{k}": metrics["precision"].mean(),
         f"recall@{k}": metrics["recall"].mean(),
@@ -66,18 +48,46 @@ def evaluate_warm(
         "users": metrics["precision"].count(),
     }
     if to_read is not None:
-        wanted = to_read[to_read["user_id"].isin(users)].merge(
+        wanted = to_read[to_read["user_id"].isin(list(recs))].merge(
             history[["user_id", "book_id"]], on=["user_id", "book_id"], how="left", indicator=True
         )
         to_read_hit = _rank_metrics(recs, wanted[wanted["_merge"] == "left_only"], k)["precision"]
         result |= {f"to_read_hit@{k}": to_read_hit.mean(), "to_read_users": to_read_hit.count()}
-    return pd.Series(result, dtype=object)
+    return result
+
+
+def evaluate_warm(
+    model: Recommender,
+    split: RatingSplit,
+    on: str = "val",
+    to_read: pd.DataFrame | None = None,
+    n_users: int | None = None,
+    seed: int = SEED,
+    k: int = K,
+) -> pd.Series:
+    """기존 독자를 on 구간(val 또는 test)으로 채점한다. n_users를 주면 그만큼만 무작위로 뽑는다."""
+    if on not in ("val", "test"):
+        raise ValueError(f"on은 'val' 또는 'test'여야 합니다: {on!r}")
+    answers = getattr(split, on)
+    users = np.sort(answers["user_id"].unique())
+    if n_users is not None:
+        users = np.random.default_rng(seed).choice(users, size=min(n_users, len(users)), replace=False)
+    # NOTE: test 시점의 독자는 val의 책도 이미 읽었으므로 이력에 val을 붙인다.
+    history = split.train if on == "val" else pd.concat([split.train, split.val])
+    history = history[history["user_id"].isin(users)]
+    recs = _recommend(model, history, k)
+    return pd.Series(_summarize(recs, answers[answers["rating"] >= RELEVANT_RATING], history, to_read, k), dtype=object)
 
 
 def evaluate_cold(
-    model: Recommender, split: RatingSplit, on: str = "tune", history_sizes: tuple[int, ...] = COLD_HISTORY_SIZES, k: int = K
+    model: Recommender,
+    split: RatingSplit,
+    on: str = "tune",
+    to_read: pd.DataFrame | None = None,
+    history_sizes: tuple[int, ...] = COLD_HISTORY_SIZES,
+    k: int = K,
 ) -> pd.DataFrame:
-    """신규 독자(on = "tune" 또는 "final")의 앞 s개 평점을 이력으로 넣어 s마다 Goal 1 지표를 계산한다. 정답은 모든 s에서 max(history_sizes)번째 이후 4점 이상이다."""
+    """신규 독자(on = "tune" 또는 "final")의 앞 s개 평점을 이력으로 넣어 s마다 채점한다. 정답은 모든 s에서 max(history_sizes)번째 이후 4점 이상이다."""
     if on not in ("tune", "final"):
         raise ValueError(f"on은 'tune' 또는 'final'이어야 합니다: {on!r}")
     cold = getattr(split, f"cold_{on}")
@@ -86,12 +96,8 @@ def evaluate_cold(
     answers = cold[(position >= max(history_sizes)) & (cold["rating"] >= RELEVANT_RATING)]
     rows = {}
     for size in history_sizes:
-        metrics = _rank_metrics(_recommend(model, cold[position < size], k), answers, k)
-        rows[size] = {
-            f"precision@{k}": metrics["precision"].mean(),
-            f"recall@{k}": metrics["recall"].mean(),
-            "users": metrics["precision"].count(),
-        }
+        history = cold[position < size]
+        rows[size] = _summarize(_recommend(model, history, k), answers, history, to_read, k)
     return pd.DataFrame.from_dict(rows, orient="index").rename_axis("history_size")
 
 

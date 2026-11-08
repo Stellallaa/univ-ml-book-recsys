@@ -117,6 +117,20 @@ def test_cold_uses_first_ratings_in_file_order_and_same_answers_for_every_size()
     assert result["users"].tolist() == [1, 1]
 
 
+def test_cold_to_read_answers_exclude_books_in_given_history():
+    # Given: to_read는 3번, 4번 책이고 3번 책은 2번째 평점이다
+    split = _split(cold_tune=_ratings([(7, 50, 5), (7, 3, 5), (7, 1, 5)]))
+    to_read = pd.DataFrame({"user_id": [7, 7], "book_id": [3, 4]})
+
+    # When
+    result = evaluate_cold(FixedRecommender(), split, on="tune", to_read=to_read, history_sizes=(1, 2))
+
+    # Then: 이력 1개일 때는 3·4번 모두 정답(1~10위 안 3·4위 적중), 2개일 때는 3번이 이력이라 4번만 정답
+    assert result["to_read_hit@10"].tolist() == pytest.approx([0.2, 0.1])
+    assert result["to_read_users"].tolist() == [1, 1]
+    assert "ndcg@10" in result.columns
+
+
 def test_rmse_on_known_errors():
     # Given: 오차 1, -1, 0, -2
     split = _split(test=_ratings([(1, 1, 5), (1, 2, 3), (2, 1, 4), (2, 2, 2)]))
