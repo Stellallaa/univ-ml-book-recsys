@@ -1,0 +1,6 @@
+goal,history_size,users,fallback_users,fallback_rate
+warm_val,train,1000,0,0.0
+cold_tune,1,2500,616,0.2464
+cold_tune,3,2500,158,0.0632
+cold_tune,5,2500,67,0.0268
+cold_tune,10,2500,15,0.006
