@@ -1,11 +1,11 @@
 cluster,books,top_tags,distinctive_tags
-0,1301,fiction | favorites | literature | novels | favourites | classics | novel | adult,literature | classics | literary-fiction | classic | literary | general-fiction | historical-fiction | 20th-century
-1,393,favorites | fiction | paranormal | fantasy | series | adult | supernatural | urban-fantasy,paranormal-romance | paranormal-fantasy | urban-fantasy | paranormal | supernatural | pnr | fantasy-paranormal | vampires
-2,1385,fiction | mystery | favorites | mystery-thriller | thriller | suspense | crime | mystery-suspense,mystery-thriller | mystery-suspense | suspense | thriller | crime | mysteries | thrillers | mystery
-3,1546,non-fiction | nonfiction | favorites | to-read-non-fiction | abandoned | adult | book-club | biography,nonfiction | non-fiction | to-read-non-fiction | biography | to-read-nonfiction | memoir | non-fic | non-fiction-to-read
-4,1061,fantasy | fiction | favorites | sci-fi-fantasy | scifi-fantasy | novels | fantasy-sci-fi | science-fiction,scifi-fantasy | sci-fi-fantasy | science-fiction-fantasy | fantasy-sci-fi | science-fiction | sci-fi | speculative-fiction | sci-fi-and-fantasy
-5,1264,fiction | favorites | adult | adult-fiction | novels | general-fiction | book-club | contemporary,general-fiction | contemporary-fiction | bookclub | adult-fiction | book-club | literary-fiction | book-club-books | didn-t-finish
-6,516,romance | favorites | fiction | 4-stars | favourites | adult | 5-stars | favorite,contemporary-romance | new-adult | alpha-male | 4-stars | chick-lit | 5-stars | love | adult-romance
-7,1203,ya | young-adult | favorites | fiction | teen | favourites | ya-fiction | romance,teen | ya-fiction | ya | ya-books | young-adult-fiction | young-adult | ya-fantasy | teen-fiction
-8,938,childrens | children | kids | fiction | children-s | children-s-books | favorites | kids-books,children-s-books | kids-books | kids | children-s | childrens-books | childrens | children | children-s-literature
-9,393,graphic-novel | graphic-novels | favorites | fiction | comic | comics | graphic | series,graphic-novel | graphic-novels | comic | comics | graphic | graphic-novels-comics | comics-graphic-novels | comics-manga
+0,1206,fiction | favorites | literature | novels | classics | favourites | novel | adult,literature | classics | literary-fiction | classic | literary | general-fiction | historical-fiction | 20th-century
+1,1133,fantasy | favorites | fiction | sci-fi-fantasy | scifi-fantasy | novels | fantasy-sci-fi | sci-fi,scifi-fantasy | sci-fi-fantasy | science-fiction-fantasy | fantasy-sci-fi | sci-fi | science-fiction | speculative-fiction | fantasy
+2,870,romance | favorites | fiction | adult | series | contemporary | favourites | 4-stars,part-of-a-series | 4-stars | alpha-male | romance | contemporary-romance | erotica | 5-stars | adult-romance
+3,1220,fiction | favorites | adult | adult-fiction | novels | general-fiction | book-club | contemporary,general-fiction | contemporary-fiction | bookclub | adult-fiction | book-club | literary-fiction | book-club-books | didn-t-finish
+4,938,favorites | non-fiction | nonfiction | philosophy | reference | unfinished | abandoned | self-help,nonfiction | non-fiction | reference | philosophy | self-help | psychology | self-improvement | unfinished
+5,387,graphic-novel | graphic-novels | favorites | fiction | comic | comics | graphic | series,graphic-novel | graphic-novels | comic | comics | graphic | comics-manga | graphic-novels-comics | comics-graphic-novels
+6,947,childrens | children | fiction | children-s | kids | children-s-books | favorites | kids-books,kids-books | children-s-books | children-s | kids | childrens-books | childrens | children | children-s-literature
+7,1378,fiction | mystery | favorites | mystery-thriller | thriller | suspense | crime | mystery-suspense,mystery-thriller | mystery-suspense | suspense | crime | thriller | mysteries | thrillers | mystery
+8,732,non-fiction | nonfiction | favorites | biography | biography-memoir | memoir | adult | book-club,biography | biography-memoir | nonfiction | memoir | non-fiction | biographies | memoirs | memoir-biography
+9,1189,ya | young-adult | favorites | fiction | teen | favourites | ya-fiction | romance,teen | ya-fiction | ya | ya-books | young-adult-fiction | young-adult | ya-fantasy | teen-fiction

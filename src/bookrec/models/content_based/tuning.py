@@ -1,6 +1,8 @@
 """CB 설정을 재현하고 검증 결과로 최종 설정을 고른다(B4)."""
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -55,3 +57,18 @@ def rank_validation(results: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(records).sort_values(
         ["cold_mean_ndcg@10", "warm_ndcg@10", "candidate_id"], ascending=[False, False, True], ignore_index=True
     )
+
+def load_selected_content_based(
+    book_tags: pd.DataFrame | None = None, config_path: str | Path | None = None,
+) -> ContentBasedRecommender:
+    """B4 선택 JSON으로 학습 전 모델을 만든다. 설정이 없거나 잘못됐으면 오류를 낸다."""
+    from bookrec.data import load_book_tags
+
+    path = Path(config_path) if config_path is not None else Path(__file__).resolve().parents[4] / "results/content_based/B4_selected_config.json"
+    saved = json.loads(path.read_text())
+    if not isinstance(saved, dict) or not isinstance(saved.get("config"), dict):
+        raise ValueError("선택 JSON에 config 객체가 필요합니다.")
+    if set(saved["config"]) != set(ContentBasedConfig.__dataclass_fields__):
+        raise ValueError("선택 config의 필드가 누락됐거나 알 수 없는 필드가 있습니다.")
+    config = ContentBasedConfig(**saved["config"])
+    return make_content_based(load_book_tags() if book_tags is None else book_tags, config)

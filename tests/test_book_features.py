@@ -106,3 +106,24 @@ def test_features_reject_unusable_input(rows):
     # When / Then
     with pytest.raises(ValueError):
         build_book_features(tags, min_df=1, book_ids=np.array([1]))
+
+
+def test_numeric_string_counts_are_added_as_numbers():
+    # Given
+    tags = _tags([(1, "a", "2"), (1, "a", "3"), (1, "b", "5")])
+
+    # When
+    features = build_book_features(tags, weighting="count", min_df=1, book_ids=np.array([1]))
+
+    # Then
+    np.testing.assert_allclose(features.matrix.toarray(), [[1 / np.sqrt(2)] * 2])
+
+
+@pytest.mark.parametrize("count", [0.1, "0.1", True, np.nan, np.inf, -1, 2**53 + 1, 2**54])
+def test_counts_must_be_nonnegative_finite_integers(count):
+    # Given
+    tags = _tags([(1, "fantasy", count)])
+
+    # When / Then
+    with pytest.raises(ValueError):
+        build_book_features(tags, min_df=1, book_ids=np.array([1]))

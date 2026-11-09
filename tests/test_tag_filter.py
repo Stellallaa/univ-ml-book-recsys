@@ -69,3 +69,16 @@ def test_report_counts_books_and_explains_removal():
     assert report.loc["owned", "count"] == 30
     assert report.loc["owned", "reason"] == "shelf"
     assert report.loc["fantasy", "reason"] == "keep"
+
+def test_mixed_status_and_format_tags_are_removed_but_named_lists_remain():
+    # Given
+    tags = _tags(["to-read-fiction", "own-to-read", "on-kindle", "owned-to-read", "books-owned",
+                  "1001-books-to-read-before-you-die", "fiction", "kindlewood"])
+
+    # When
+    basic = filter_book_tags(tags, extended=False)
+    extended = filter_book_tags(tags)
+
+    # Then
+    expected = ["1001-books-to-read-before-you-die", "fiction", "kindlewood"]
+    assert basic.tag_name.tolist() == extended.tag_name.tolist() == expected

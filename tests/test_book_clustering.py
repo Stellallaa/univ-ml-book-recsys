@@ -214,3 +214,86 @@ def test_diagnostics_reject_changed_or_unusable_samples(ids):
     # When / Then
     with pytest.raises(ValueError):
         cluster_diagnostics(features, clusters, np.array(ids))
+
+def test_diverse_representatives_limit_authors_and_record_relaxation():
+    # Given
+    from bookrec.models.content_based.clustering import BookClusters
+    features = _features()
+    clusters = BookClusters(features.book_ids, np.array([0, 0, 0, 1, 1, 1, -1]),
+                            np.array([[1., 0], [0, 1]]), 0., 1)
+    books = pd.DataFrame({"book_id": features.book_ids,
+                          "title": ["A (Saga, #1)", "B (Saga, #2)", "C", "D", "E", "F", "G"],
+                          "main_author": ["X", "X", "Y", "Z", "Z", "Z", "Q"]})
+
+    # When
+    selected = representative_books(features, clusters, n_books=2, books=books, diversify=True)
+
+    # Then
+    first = selected[selected.cluster == 0]
+    assert set(first.book_id) == {1, 2}
+    assert first.selection_rule.eq("author_series").all()
+    second = selected[selected.cluster == 1]
+    assert "relax_author" in second.selection_rule.tolist()
+    assert selected.candidate_rank.ge(1).all()
+    with pytest.raises(ValueError):
+        representative_books(features, clusters, books=books.iloc[:2], diversify=True)
+
+
+def test_selected_clusters_reject_missing_or_incompatible_settings(tmp_path):
+    # Given
+    import json
+    from bookrec.models.content_based.clustering import load_selected_clusters
+    path = tmp_path / "selected.json"
+    path.write_text(json.dumps({"adopted": True}))
+
+    # When / Then
+    with pytest.raises(ValueError):
+        load_selected_clusters(config_path=path)
+    with pytest.raises(FileNotFoundError):
+        load_selected_clusters(config_path=tmp_path / "missing.json")
+
+
+def test_selected_clusters_replays_saved_parameters_and_rejects_drift(tmp_path):
+    # Given
+    import json
+    from dataclasses import asdict
+    from bookrec.models.content_based.tuning import ContentBasedConfig
+    from bookrec.models.content_based.clustering import load_selected_clusters
+    tags = pd.DataFrame([(1, "fantasy", 1), (2, "fantasy", 1), (3, "mystery", 1), (4, "mystery", 1)],
+                        columns=["book_id", "tag_name", "count"])
+    saved = {"adopted": False, "feature_config": asdict(ContentBasedConfig(min_df=1)),
+             "n_components": None, "k": 2, "svd_seed": 42, "svd_n_iter": 7,
+             "fit_seed": 42, "n_init": 10, "max_iter": 300, "tol": 1e-4,
+             "algorithm": "lloyd", "initialization": "k-means++", "metric": "euclidean"}
+    path = tmp_path / "selected.json"
+    path.write_text(json.dumps(saved))
+
+    # When
+    features, clusters = load_selected_clusters(tags, path)
+
+    # Then
+    assert features.matrix.shape == (10000, 2)
+    assert clusters.space.n_components is None
+    assert clusters.labels[0] == clusters.labels[1]
+    assert clusters.labels[2] == clusters.labels[3] != clusters.labels[0]
+    assert (clusters.labels[4:] == -1).all()
+    for key, value in [("n_init", 1), ("fit_seed", True), ("feature_config", {})]:
+        path.write_text(json.dumps({**saved, key: value}))
+        with pytest.raises(ValueError):
+            load_selected_clusters(tags, path)
+
+
+def test_diversity_limits_explicit_series_across_different_authors():
+    # Given
+    features = _features()
+    clusters = fit_book_clusters(features, 2)
+    books = pd.DataFrame({"book_id": features.book_ids,
+                          "title": ["Standalone", "Second (Saga, #2)", "First (Saga, #1)", "D", "E", "F", "G"],
+                          "main_author": ["A", "B", "C", "D", "E", "F", "G"]})
+
+    # When
+    selected = representative_books(features, clusters, n_books=2, books=books, diversify=True)
+
+    # Then
+    fantasy_cluster = clusters.labels[np.flatnonzero(features.book_ids == 1)[0]]
+    assert set(selected[selected.cluster == fantasy_cluster].book_id) == {1, 3}

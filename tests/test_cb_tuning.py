@@ -81,3 +81,23 @@ def test_factory_rejects_non_boolean_flags():
     # When / Then
     with pytest.raises(ValueError):
         make_content_based(tags, ContentBasedConfig(extended="false"))
+
+def test_selected_model_requires_complete_saved_config(tmp_path):
+    # Given
+    import json
+    from dataclasses import asdict
+    from bookrec.models.content_based.tuning import load_selected_content_based
+    path = tmp_path / "selected.json"
+    tags = pd.DataFrame([(1, "fantasy", 1), (2, "fantasy", 1)], columns=["book_id", "tag_name", "count"])
+    path.write_text(json.dumps({"config": asdict(ContentBasedConfig(weighting="binary"))}))
+
+    # When
+    model = load_selected_content_based(tags, path)
+
+    # Then
+    assert model.features.tag_names.tolist() == ["fantasy"]
+    path.write_text(json.dumps({"config": {"weighting": "binary"}}))
+    with pytest.raises(ValueError):
+        load_selected_content_based(tags, path)
+    with pytest.raises(FileNotFoundError):
+        load_selected_content_based(tags, tmp_path / "missing.json")

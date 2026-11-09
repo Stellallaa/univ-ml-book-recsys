@@ -30,6 +30,12 @@ PERSONAL_TAGS = {
 READING_YEAR = re.compile(r"(?:(?:read|reads|reading|books-read|read-in)-(?:19|20)\d{2}|(?:19|20)\d{2}-(?:read|reads|reading))")
 
 
+# NOTE: 혼합 태그도 전체를 제거한다. 일부를 잘라 장르 태그로 바꾸면 count가 중복될 수 있다.
+SHELF_PATTERN = re.compile(r"(?:^|-)(?:to-read|want-to-read|owned|own-to-read|books-owned|books-i-own)(?:-|$)")
+FORMAT_PATTERN = re.compile(r"(?:^|-)(?:kindle|audiobooks?|audio-books|ebooks?|e-books|paperback|hardcover|hardback|nook|epub)(?:-|$)")
+BOOK_LIST = re.compile(r"^\d+-books(?:-|$)")
+
+
 def _reason(name: object, extended: bool) -> str:
     if not isinstance(name, str) or not name.strip():
         return "empty"
@@ -38,6 +44,12 @@ def _reason(name: object, extended: bool) -> str:
         return "shelf"
     if tag in FORMAT_TAGS:
         return "format"
+    # NOTE: 1001-books-to-read-before-you-die 같은 명명된 목록은 일괄 삭제하지 않는다.
+    if not BOOK_LIST.search(tag):
+        if SHELF_PATTERN.search(tag):
+            return "shelf"
+        if FORMAT_PATTERN.search(tag):
+            return "format"
     if extended and tag in PERSONAL_TAGS:
         return "personal"
     if extended and READING_YEAR.fullmatch(tag):

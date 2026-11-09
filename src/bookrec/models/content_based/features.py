@@ -66,11 +66,18 @@ def build_book_features(
         raise ValueError("book_tags에 book_ids 밖의 책 ID가 있습니다.")
     if not tags["tag_name"].map(lambda name: isinstance(name, str) and bool(name.strip())).all():
         raise ValueError("태그 이름은 비어 있지 않은 문자열이어야 합니다.")
-    counts = tags["count"].to_numpy(dtype=float)
-    if not np.isfinite(counts).all() or (counts < 0).any():
-        raise ValueError("count는 유한한 0 이상의 값이어야 합니다.")
+    if tags["count"].map(lambda value: isinstance(value, (bool, np.bool_))).any():
+        raise ValueError("count에 bool은 사용할 수 없습니다.")
+    counts = pd.to_numeric(tags["count"], errors="raise").to_numpy(dtype=float)
+    if (not np.isfinite(counts).all() or (counts < 0).any()
+            or (counts != np.floor(counts)).any() or (counts > (2**53 - 1)).any()):
+        raise ValueError("count는 0 이상 2**53-1 이하의 유한한 정수여야 합니다.")
+    # NOTE: 검사에 사용한 숫자를 실제 집계에도 반영해 문자열 연결과 정수 overflow를 막는다.
+    tags["count"] = counts
     # NOTE: 0회 태그는 특징에 기여하지 않는다. 중복 입력은 합산하되, A3 입력은 이미 중복이 없다.
     tags = tags.loc[counts > 0].groupby(["book_id", "tag_name"], as_index=False)["count"].sum()
+    if (tags["count"] > (2**53 - 1)).any():
+        raise ValueError("중복 합산 count가 정확하게 표현할 수 있는 범위를 넘었습니다.")
     frequency = tags.groupby("tag_name")["book_id"].nunique()
     names = np.array(sorted(frequency[frequency >= min_df].index), dtype=str)
     if not len(names):

@@ -1,6 +1,9 @@
 """책 특징 벡터를 k-means로 묶고 대표 책을 고른다(B5)."""
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
+import re
 
 import numpy as np
 import pandas as pd
@@ -141,21 +144,69 @@ def cluster_overview(features: BookFeatures, clusters: BookClusters, n_tags: int
     return pd.DataFrame(rows)
 
 
-def representative_books(features: BookFeatures, clusters: BookClusters, n_books: int = 5) -> pd.DataFrame:
-    """실제 군집 좌표에서 중심까지 Euclidean 거리가 가까운 책을 고른다. 동점은 책 ID 순서다."""
+def representative_books(
+    features: BookFeatures, clusters: BookClusters, n_books: int = 5,
+    books: pd.DataFrame | None = None, diversify: bool = False,
+) -> pd.DataFrame:
+    """실제 군집 좌표의 중심 거리로 고른다. diversify=True면 저자·명시적 시리즈 중복을 제한한다.
+
+    부족할 때는 시리즈·저자·제목 제한을 차례로 완화한다. 결과는 거리순이며 동점은 책 ID순이다.
+    """
     _check_alignment(features, clusters)
     if not isinstance(n_books, (int, np.integer)) or isinstance(n_books, bool) or n_books < 1:
         raise ValueError("n_books는 1 이상의 정수여야 합니다.")
     matrix = features.matrix if clusters.space is None else clusters.space.matrix
+    if diversify:
+        if books is None or not {"book_id", "title", "main_author"}.issubset(books.columns) or not books["book_id"].is_unique:
+            raise ValueError("다양성 선정에는 중복 없는 책 ID·제목·대표 저자 표가 필요합니다.")
+        metadata = books.set_index("book_id")
+        if not pd.Index(features.book_ids).isin(metadata.index).all():
+            raise ValueError("책 메타데이터에 특징 행렬의 책이 누락됐습니다.")
     rows = []
     for cluster, center in enumerate(clusters.centers):
         positions = np.flatnonzero(clusters.labels == cluster)
         distances = euclidean_distances(matrix[positions], center.reshape(1, -1)).ravel()
-        order = np.lexsort((features.book_ids[positions], distances))[:n_books]
-        for rank, index in enumerate(order, start=1):
-            rows.append({"cluster": cluster, "rank": rank, "book_id": int(features.book_ids[positions[index]]),
-                         "distance": float(distances[index])})
-    return pd.DataFrame(rows, columns=["cluster", "rank", "book_id", "distance"])
+        order = np.lexsort((features.book_ids[positions], distances))
+        if not diversify:
+            chosen = [(index, "distance") for index in order[:n_books]]
+        else:
+            chosen = []
+            authors, series, titles = set(), set(), set()
+            used = set()
+            # NOTE: 중심과 가까운 순서를 유지하며 먼저 저자·명시적 시리즈 중복을 막는다.
+            #       수량이 부족할 때만 시리즈, 저자, 제목 제한을 순서대로 완화한다.
+            for rule in ("author_series", "relax_series", "relax_author", "distance"):
+                for index in order:
+                    if index in used or len(chosen) >= n_books:
+                        continue
+                    book_id = int(features.book_ids[positions[index]])
+                    info = metadata.loc[book_id]
+                    title = str(info["title"]).strip().casefold()
+                    author = str(info["main_author"]).strip().casefold()
+                    match = re.search(r"\(([^()]*)#\s*\d[^()]*\)", title)
+                    key = match.group(1).rstrip(" ,;-") if match else None
+                    if rule != "distance" and title in titles:
+                        continue
+                    if rule in ("author_series", "relax_series") and author in authors:
+                        continue
+                    if rule == "author_series" and key and key in series:
+                        continue
+                    chosen.append((index, rule))
+                    used.add(index)
+                    authors.add(author)
+                    titles.add(title)
+                    if key:
+                        series.add(key)
+            chosen.sort(key=lambda pair: (distances[pair[0]], features.book_ids[positions[pair[0]]]))
+        candidate_ranks = {index: rank for rank, index in enumerate(order, start=1)}
+        for rank, (index, rule) in enumerate(chosen, start=1):
+            row = {"cluster": cluster, "rank": rank, "book_id": int(features.book_ids[positions[index]]),
+                   "distance": float(distances[index])}
+            if diversify:
+                row.update(candidate_rank=candidate_ranks[index], selection_rule=rule)
+            rows.append(row)
+    columns = ["cluster", "rank", "book_id", "distance"]
+    return pd.DataFrame(rows, columns=columns + (["candidate_rank", "selection_rule"] if diversify else []))
 
 
 def _check_alignment(features: BookFeatures, clusters: BookClusters) -> None:
@@ -216,3 +267,30 @@ def cluster_diagnostics(
             row[f"{name}_negative_rate"] = float((values < 0).mean()) if len(values) else np.nan
         rows.append(row)
     return per_book, pd.DataFrame(rows)
+
+def load_selected_clusters(
+    book_tags: pd.DataFrame | None = None, config_path: str | Path | None = None,
+) -> tuple[BookFeatures, BookClusters]:
+    """개선 실험의 최종 JSON으로 특징과 군집을 재현한다. 암묵적인 기본 설정 대체는 없다."""
+    from bookrec.data import load_book_tags
+    from bookrec.models.content_based.tuning import ContentBasedConfig, make_content_based
+
+    path = Path(config_path) if config_path is not None else Path(__file__).resolve().parents[4] / "results/content_based/B5_improvement_selected_config.json"
+    saved = json.loads(path.read_text())
+    required = {"adopted", "feature_config", "n_components", "k", "svd_seed", "svd_n_iter", "fit_seed",
+                "n_init", "max_iter", "tol", "algorithm", "initialization", "metric"}
+    if not isinstance(saved, dict) or not required.issubset(saved) or type(saved["adopted"]) is not bool:
+        raise ValueError("최종 군집 JSON의 필수 설정·채택 여부를 확인하세요.")
+    expected = {"svd_n_iter": 7, "n_init": 10, "max_iter": 300, "tol": 1e-4,
+                "algorithm": "lloyd", "initialization": "k-means++", "metric": "euclidean"}
+    if any(saved[key] != value for key, value in expected.items()):
+        raise ValueError("현재 군집 구현과 JSON의 학습 파라미터가 다릅니다.")
+    for key in ("svd_seed", "fit_seed"):
+        if type(saved[key]) is not int or not 0 <= saved[key] < 2**32:
+            raise ValueError("군집·SVD seed는 0 이상 2**32 미만의 정수여야 합니다.")
+    if not isinstance(saved["feature_config"], dict) or set(saved["feature_config"]) != set(ContentBasedConfig.__dataclass_fields__):
+        raise ValueError("최종 군집 feature_config의 필드를 확인하세요.")
+    features = make_content_based(load_book_tags() if book_tags is None else book_tags,
+                                  ContentBasedConfig(**saved["feature_config"])).features
+    space = prepare_cluster_space(features, saved["n_components"], seed=saved["svd_seed"])
+    return features, fit_book_clusters(features, saved["k"], seed=saved["fit_seed"], space=space)

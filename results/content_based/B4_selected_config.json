@@ -1,9 +1,9 @@
 {
-  "candidate_id": "C01",
+  "candidate_id": "C17",
   "config": {
     "extended": false,
     "weighting": "binary",
-    "min_df": 2,
+    "min_df": 1,
     "sublinear_tf": true,
     "profile_weighting": "positive"
   },
@@ -13,6 +13,63 @@
   "n_cold_users": 2500,
   "train_source": "split.train",
   "final_evaluation_performed": false,
-  "cold_mean_ndcg@10": 0.1838214089445948,
-  "warm_ndcg@10": 0.05157104508000242
+  "cold_mean_ndcg@10": 0.1836244814222516,
+  "warm_ndcg@10": 0.050634450181807684,
+  "paired_uncertainty": [
+    {
+      "goal": "warm_val",
+      "against": "popularity",
+      "users": 996,
+      "mean_difference": 0.009201881489140059,
+      "ci95_low": 0.0005180119882015349,
+      "ci95_high": 0.018143648818514446
+    },
+    {
+      "goal": "cold_mean",
+      "against": "popularity",
+      "users": 2500,
+      "mean_difference": -0.037698694988758906,
+      "ci95_low": -0.04727584699384226,
+      "ci95_high": -0.02828413936191634
+    },
+    {
+      "goal": "warm_val",
+      "against": "C11",
+      "users": 996,
+      "mean_difference": 0.0009550310021903925,
+      "ci95_low": -0.004285589717575403,
+      "ci95_high": 0.006298597310159623
+    },
+    {
+      "goal": "cold_mean",
+      "against": "C11",
+      "users": 2500,
+      "mean_difference": 0.013487399250137009,
+      "ci95_low": 0.010840798826473392,
+      "ci95_high": 0.016169563108349553
+    },
+    {
+      "goal": "warm_val",
+      "against": "C01",
+      "users": 996,
+      "mean_difference": 2.554469652331978e-05,
+      "ci95_low": -0.001248134008583907,
+      "ci95_high": 0.001174380603899665
+    },
+    {
+      "goal": "cold_mean",
+      "against": "C01",
+      "users": 2500,
+      "mean_difference": 0.00033950511423450004,
+      "ci95_low": -4.129473733723658e-05,
+      "ci95_high": 0.0007222022888732823
+    }
+  ],
+  "candidate_search": "16 balanced initial candidates; top 3 refine min_df 1,5,10; same validation selection criterion",
+  "bootstrap": {
+    "resamples": 2000,
+    "seed": 42,
+    "unit": "reader",
+    "selection_bias_corrected": false
+  }
 }
