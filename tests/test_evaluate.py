@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from bookrec.data import RatingSplit
+from bookrec.evaluation import evaluate as evaluate_module
 from bookrec.evaluation import evaluate_cold, evaluate_rmse, evaluate_warm
 from bookrec.models.base import BOOK_IDS, RatingPredictor, Recommender
 
@@ -91,6 +92,34 @@ def test_warm_on_test_uses_train_and_val_as_history():
     # Then: 모델은 train + val을 이력으로 받고, 1번 책이 추천에서 빠져 2번 책이 1위로 적중한다
     assert model.seen[0]["book_id"].tolist() == [100, 1]
     assert result["ndcg@10"] == pytest.approx(1.0)
+
+
+def test_warm_merges_recommendations_across_batches(monkeypatch):
+    # Given: 독자 3명, 한 묶음은 2명
+    monkeypatch.setattr(evaluate_module, "BATCH_SIZE", 2)
+    split = _split(train=_ratings([(u, 100, 5) for u in (1, 2, 3)]), val=_ratings([(u, 1, 5) for u in (1, 2, 3)]))
+    model = FixedRecommender()
+
+    # When
+    result = evaluate_warm(model, split, on="val")
+
+    # Then: 모델은 두 번 불리고, 세 명 모두 채점된다
+    assert [len(seen["user_id"].unique()) for seen in model.seen] == [2, 1]
+    assert result["users"] == 3
+
+
+def test_warm_n_users_samples_same_users_every_time():
+    # Given: 독자 10명
+    split = _split(train=_ratings([(u, 100, 5) for u in range(10)]), val=_ratings([(u, 1, 5) for u in range(10)]))
+    models = [FixedRecommender(), FixedRecommender()]
+
+    # When
+    results = [evaluate_warm(model, split, on="val", n_users=3) for model in models]
+
+    # Then: 3명만 채점하고, 두 번 모두 같은 독자가 뽑힌다
+    users = [sorted(model.seen[0]["user_id"].unique()) for model in models]
+    assert [result["users"] for result in results] == [3, 3]
+    assert users[0] == users[1]
 
 
 def test_warm_rejects_unknown_target():
