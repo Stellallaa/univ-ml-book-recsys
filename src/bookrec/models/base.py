@@ -29,7 +29,11 @@ class Recommender(ABC):
         # NOTE: to_numpy(copy=True)는 점수표를 숫자 배열로 복사한다(score가 돌려준 원본은 바꾸지 않는다).
         #       get_indexer(값들)는 각 값이 index·columns의 몇 번째 위치인지 돌려준다. 두 위치 배열로 (독자, 책) 칸을 한 번에 고른다.
         values = scores.to_numpy(dtype=float, copy=True)
-        values[scores.index.get_indexer(read["user_id"]), scores.columns.get_indexer(read["book_id"])] = -np.inf
+        rows = scores.index.get_indexer(read["user_id"])
+        cols = scores.columns.get_indexer(read["book_id"])
+        # NOTE: get_indexer는 없는 값에 -1을 돌려주고, numpy에서 -1은 마지막 칸이다. 점수표에 없는 독자·책은 건너뛴다.
+        keep = (rows >= 0) & (cols >= 0)
+        values[rows[keep], cols[keep]] = -np.inf
         # NOTE: argsort(-values, axis=1)는 행마다 점수가 큰 순서의 열 위치를 돌려준다. kind="stable"은 동점이면 앞 열(작은 book_id)을 먼저 둔다.
         top = np.argsort(-values, axis=1, kind="stable")[:, :k]
         return dict(zip(scores.index.tolist(), scores.columns.to_numpy()[top].tolist()))
