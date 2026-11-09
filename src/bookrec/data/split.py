@@ -28,10 +28,13 @@ class RatingSplit:
 
 def split_ratings(ratings: pd.DataFrame, n_cold_users: int = N_COLD_USERS, seed: int = SEED) -> RatingSplit:
     """신규 독자 실험용 독자를 먼저 떼고, 나머지는 독자별 행 순서대로 70/15/15로 나눈다."""
+    # NOTE: default_rng(seed)는 시드를 고정한 난수 생성기다. choice(독자들, size, replace=False)는 size명을 중복 없이 뽑는다.
     cold = np.random.default_rng(seed).choice(ratings["user_id"].unique(), size=n_cold_users, replace=False)
     half = n_cold_users // 2
     is_cold = ratings["user_id"].isin(cold)
     warm = ratings[~is_cold]
+    # NOTE: cumcount()는 독자 안에서 행마다 0, 1, 2…(몇 번째 평점인지)를 매긴다.
+    #       transform("size")는 독자별 행 수를 그 독자의 모든 행에 붙인다. 그래서 아래 비교가 행마다 자기 독자의 경계로 된다.
     position = warm.groupby("user_id").cumcount()
     count = warm.groupby("user_id")["user_id"].transform("size")
     train_end = count * TRAIN_PERCENT // 100

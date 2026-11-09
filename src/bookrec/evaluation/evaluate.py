@@ -18,6 +18,7 @@ def _recommend(model: Recommender, history: pd.DataFrame, read: pd.DataFrame, k:
     users = history["user_id"].unique()
     recs = {}
     for start in range(0, len(users), BATCH_SIZE):
+        # NOTE: dict |= other(Python 3.9+)는 other의 키·값을 dict에 합쳐 넣는다.
         batch = users[start : start + BATCH_SIZE]
         recs |= model.recommend(history[history["user_id"].isin(batch)], k, read[read["user_id"].isin(batch)])
     return recs
@@ -26,16 +27,23 @@ def _recommend(model: Recommender, history: pd.DataFrame, read: pd.DataFrame, k:
 def _rank_metrics(recs: dict[int, list[int]], answers: pd.DataFrame, k: int) -> pd.DataFrame:
     """독자별 추천 목록과 정답(user_id, book_id)으로 독자별 precision·recall·ndcg를 계산한다. 정답이 없는 독자는 NaN이다."""
     users = list(recs)
+    # NOTE: Series.explode()는 리스트가 든 칸을 원소마다 한 행으로 펼친다(인덱스 user_id는 원소 수만큼 반복).
+    #       rename_axis("user_id")로 인덱스에 이름을 붙이고 reset_index()로 열로 꺼내 (user_id, book_id) 표를 만든다.
     ranked = pd.Series(recs).explode().astype(int).rename("book_id").rename_axis("user_id").reset_index()
+    # NOTE: groupby("user_id").cumcount()는 독자 안에서 행마다 0, 1, 2…를 매긴다. 추천 순서대로 펼쳤으므로 +1이 순위다.
     ranked["rank"] = ranked.groupby("user_id").cumcount() + 1
     answers = answers[["user_id", "book_id"]].drop_duplicates()
+    # NOTE: merge(on=[...])는 how 기본값이 "inner"라 양쪽에 모두 있는 (독자, 책)만 남는다. 즉 적중한 추천만 남는다.
     hit = ranked.merge(answers, on=["user_id", "book_id"])
+    # NOTE: value_counts()는 독자별 행 수를 센다. reindex(users, fill_value=0)는 행을 users 순서로 맞추고 없는 독자는 0으로 채운다.
     n_answers = answers["user_id"].value_counts().reindex(users, fill_value=0)
     hits = hit.groupby("user_id").size().reindex(users, fill_value=0)
     dcg = (1 / np.log2(hit["rank"] + 1)).groupby(hit["user_id"]).sum().reindex(users, fill_value=0.0)
-    # NOTE: idcg[n] = 정답 n권이 1~n위를 채웠을 때의 DCG.
+    # NOTE: idcg[n] = 정답 n권이 1~n위를 채웠을 때의 DCG. 1~k위의 1/log2(순위+1)을 np.cumsum으로 누적한 길이 k+1 배열을
+    #       미리 만들고(0번 칸은 정답 0권), 독자별 정답 수(clip(upper=k)로 최대 k)를 위치로 써서 꺼낸다.
     idcg = np.concatenate([[0.0], np.cumsum(1 / np.log2(np.arange(2, k + 2)))])[n_answers.clip(upper=k)]
     metrics = pd.DataFrame({"precision": hits / k, "recall": hits / n_answers, "ndcg": dcg / idcg})
+    # NOTE: where(조건, axis=0)는 조건이 False인 행(정답 0권 독자)을 NaN으로 바꾼다. mean()과 count()는 NaN을 건너뛴다.
     return metrics.where(n_answers > 0, axis=0)
 
 
@@ -49,6 +57,8 @@ def _summarize(recs: dict[int, list[int]], answers: pd.DataFrame, read: pd.DataF
         "users": metrics["precision"].count(),
     }
     if to_read is not None:
+        # NOTE: merge(how="left", indicator=True)는 to_read 행을 모두 남기고, read에도 있으면 "both", 없으면 "left_only"를
+        #       _merge 열에 적는다. "left_only"만 남겨 이미 읽은 책을 뺀다.
         wanted = to_read[to_read["user_id"].isin(list(recs))].merge(
             read[["user_id", "book_id"]], on=["user_id", "book_id"], how="left", indicator=True
         )
@@ -72,6 +82,7 @@ def evaluate_warm(
     answers = getattr(split, on)
     users = np.sort(answers["user_id"].unique())
     if n_users is not None:
+        # NOTE: default_rng(seed)는 시드를 고정한 난수 생성기다. choice(users, size, replace=False)는 users에서 size명을 중복 없이 뽑는다.
         users = np.random.default_rng(seed).choice(users, size=min(n_users, len(users)), replace=False)
     # NOTE: test 시점의 독자는 val의 책도 이미 읽었으므로 이력에 val을 붙인다.
     history = split.train if on == "val" else pd.concat([split.train, split.val])
@@ -95,7 +106,7 @@ def evaluate_cold(
     if on not in ("tune", "final"):
         raise ValueError(f"on은 'tune' 또는 'final'이어야 합니다: {on!r}")
     cold = getattr(split, f"cold_{on}")
-    # NOTE: 파일 순서가 시간순이라 정렬하지 않고 순번을 매긴다.
+    # NOTE: 파일 순서가 시간순이라 정렬하지 않고 순번을 매긴다. cumcount()는 독자 안에서 0, 1, 2…를 매긴다.
     position = cold.groupby("user_id").cumcount()
     read = cold[position < max(history_sizes)]
     answers = cold[(position >= max(history_sizes)) & (cold["rating"] >= RELEVANT_RATING)]
@@ -103,6 +114,7 @@ def evaluate_cold(
     for size in history_sizes:
         history = cold[position < size]
         rows[size] = _summarize(_recommend(model, history, read, k), answers, read, to_read, k)
+    # NOTE: from_dict(orient="index")는 dict의 키(s)를 행, 안쪽 dict의 키(지표)를 열로 둔다.
     return pd.DataFrame.from_dict(rows, orient="index").rename_axis("history_size")
 
 
