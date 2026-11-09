@@ -45,7 +45,7 @@ evaluate_rmse(model, split, on="test")
 
 | 함수 | 돌려주는 것 |
 | --- | --- |
-| `evaluate_warm(model, split, on="val"/"test", to_read=None, n_users=None)` | `precision@10`, `recall@10`, `ndcg@10`, `users`, (`to_read`를 넘기면) `to_read_hit@10`, `to_read_users`를 담은 Series |
+| `evaluate_warm(model, split, on="val"/"test", to_read=None, n_users=None)` | `precision@10`, `recall@10`, `ndcg@10`, `users`, (`to_read`를 넘기면) `to_read_hit@10`, `to_read_users`를 담은 dict. 여러 모델은 `pd.DataFrame([결과1, 결과2])`로 모읍니다 |
 | `evaluate_cold(model, split, on="tune"/"final", to_read=None)` | 행 = 남긴 평점 수(1, 3, 5, 10), 열 = 위와 같은 지표인 표 |
 | `evaluate_rmse(model, split, on="val"/"test")` | RMSE 숫자 하나 |
 

@@ -74,7 +74,7 @@ def evaluate_warm(
     n_users: int | None = None,
     seed: int = SEED,
     k: int = K,
-) -> pd.Series:
+) -> dict:
     """기존 독자를 on 구간(val 또는 test)으로 채점한다. n_users를 주면 그만큼만 무작위로 뽑는다."""
     if on not in ("val", "test"):
         raise ValueError(f"on은 'val' 또는 'test'여야 합니다: {on!r}")
@@ -86,7 +86,7 @@ def evaluate_warm(
     history = split.train if on == "val" else pd.concat([split.train, split.val])
     history = history[history["user_id"].isin(users)]
     recs = _recommend(model, history, history, k)
-    return pd.Series(_summarize(recs, answers[answers["rating"] >= RELEVANT_RATING], history, to_read, k), dtype=object)
+    return _summarize(recs, answers[answers["rating"] >= RELEVANT_RATING], history, to_read, k)
 
 
 def evaluate_cold(
