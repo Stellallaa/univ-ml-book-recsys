@@ -4,32 +4,71 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from scipy.sparse import csr_matrix, issparse
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
+from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics import silhouette_score, silhouette_samples
 from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.preprocessing import normalize
 
 from bookrec.models.content_based.features import BookFeatures
 
 
 @dataclass(frozen=True)
+class ClusterSpace:
+    """군집 계산 전용 좌표. SVD 축은 원래 태그가 아니며 BookFeatures는 그대로 보존한다."""
+
+    book_ids: np.ndarray
+    matrix: csr_matrix | np.ndarray
+    n_components: int | None
+    explained_variance_ratio: float | None
+
+
+@dataclass(frozen=True)
 class BookClusters:
-    """책 ID 순서의 군집 번호와 중심. 영벡터 책의 군집 번호는 -1이다."""
+    """책 ID 순서의 군집 번호와 실제 군집 좌표의 중심. 영벡터 책은 -1이다."""
 
     book_ids: np.ndarray
     labels: np.ndarray
     centers: np.ndarray
     inertia: float
     n_iter: int
+    space: ClusterSpace | None = None
 
 
-def fit_book_clusters(features: BookFeatures, k: int, seed: int = 42) -> BookClusters:
-    """영벡터를 제외하고 k-means를 학습한다. 원래 책 ID·행 순서는 유지한다."""
+def prepare_cluster_space(features: BookFeatures, n_components: int | None = None, seed: int = 42) -> ClusterSpace:
+    """원본 또는 SVD 후 L2 재정규화 좌표를 만든다. 원본 영벡터는 0으로 유지한다."""
     matrix = features.matrix
     if matrix.shape != (len(features.book_ids), len(features.tag_names)) or len(np.unique(features.book_ids)) != len(features.book_ids):
         raise ValueError("특징 행렬과 책 ID·태그 이름의 대응을 확인하세요.")
     if not matrix.shape[1] or not np.isfinite(matrix.data).all() or (matrix.data < 0).any():
         raise ValueError("특징은 유한한 비음수 값이어야 하고 태그 열이 필요합니다.")
+    if n_components is None:
+        return ClusterSpace(features.book_ids.copy(), matrix, None, None)
     nonzero = np.asarray(matrix.multiply(matrix).sum(axis=1)).ravel() > 0
+    if (not isinstance(n_components, (int, np.integer)) or isinstance(n_components, bool)
+            or not 1 <= n_components < min(int(nonzero.sum()), matrix.shape[1])):
+        raise ValueError("SVD 차원은 1 이상이며 유효 책 수와 태그 수보다 작아야 합니다.")
+    reducer = TruncatedSVD(n_components=n_components, n_iter=7, random_state=seed)
+    reduced = np.zeros((len(features.book_ids), n_components))
+    reduced[nonzero] = normalize(reducer.fit_transform(matrix[nonzero]), norm="l2")
+    # NOTE: 음수인 SVD 좌표는 정상이다. 원본 태그 가중치의 비음수 조건을 축소 좌표에 적용하지 않는다.
+    return ClusterSpace(features.book_ids.copy(), reduced, int(n_components), float(reducer.explained_variance_ratio_.sum()))
+
+
+def fit_book_clusters(
+    features: BookFeatures, k: int, seed: int = 42, space: ClusterSpace | None = None,
+) -> BookClusters:
+    """영벡터를 제외하고 k-means를 학습한다. space를 생략하면 기존 원본 공간을 사용한다."""
+    if space is None:
+        space = prepare_cluster_space(features)
+    if not np.array_equal(features.book_ids, space.book_ids) or space.matrix.shape[0] != len(features.book_ids):
+        raise ValueError("군집 좌표와 원본 특징의 책 ID 순서가 다릅니다.")
+    matrix = space.matrix
+    values = matrix.data if issparse(matrix) else matrix
+    if not np.isfinite(values).all():
+        raise ValueError("군집 좌표는 유한한 값이어야 합니다.")
+    nonzero = _nonzero_rows(matrix)
     n_books = int(nonzero.sum())
     if not isinstance(k, (int, np.integer)) or isinstance(k, bool) or not 2 <= k < n_books:
         raise ValueError("k는 2 이상이며 영벡터를 제외한 책 수보다 작은 정수여야 합니다.")
@@ -41,29 +80,31 @@ def fit_book_clusters(features: BookFeatures, k: int, seed: int = 42) -> BookClu
         raise ValueError("서로 다른 특징 벡터가 부족해 요청한 군집 수를 만들 수 없습니다.")
     labels = np.full(len(features.book_ids), -1, dtype=int)
     labels[nonzero] = model.labels_
-    return BookClusters(features.book_ids.copy(), labels, model.cluster_centers_, float(model.inertia_), int(model.n_iter_))
+    return BookClusters(features.book_ids.copy(), labels, model.cluster_centers_, float(model.inertia_), int(model.n_iter_), space)
 
 
 def compare_cluster_counts(
     features: BookFeatures, cluster_counts: tuple[int, ...] = (5, 10, 15, 20),
-    seed: int = 42, sample_size: int = 2000,
+    seed: int = 42, sample_size: int = 2000, space: ClusterSpace | None = None,
 ) -> tuple[pd.DataFrame, dict[int, BookClusters]]:
-    """같은 책 표본의 Euclidean silhouette와 전체 학습 inertia·군집 크기를 비교한다."""
+    """같은 책 표본의 군집 공간 silhouette와 전체 학습 inertia·군집 크기를 비교한다."""
     if not cluster_counts or len(set(cluster_counts)) != len(cluster_counts):
         raise ValueError("중복 없는 k 후보가 필요합니다.")
     if not isinstance(sample_size, (int, np.integer)) or isinstance(sample_size, bool) or sample_size < 3:
         raise ValueError("sample_size는 3 이상의 정수여야 합니다.")
-    valid = np.flatnonzero(np.asarray(features.matrix.multiply(features.matrix).sum(axis=1)).ravel() > 0)
+    if space is None:
+        space = prepare_cluster_space(features)
+    valid = np.flatnonzero(_nonzero_rows(space.matrix))
     # NOTE: k마다 같은 표본을 사용한다. 전체 책의 쌍별 거리 행렬을 만들지 않도록 기본 2,000권으로 제한한다.
     sample = np.sort(np.random.default_rng(seed).choice(valid, size=min(sample_size, len(valid)), replace=False))
     rows, models = [], {}
     for k in cluster_counts:
-        result = fit_book_clusters(features, k, seed=seed)
+        result = fit_book_clusters(features, k, seed=seed, space=space)
         models[k] = result
         sizes = np.bincount(result.labels[result.labels >= 0], minlength=k)
         sampled_labels = result.labels[sample]
         n_labels = len(np.unique(sampled_labels))
-        score = silhouette_score(features.matrix[sample], sampled_labels, metric="euclidean") if 1 < n_labels < len(sample) else np.nan
+        score = silhouette_score(space.matrix[sample], sampled_labels, metric="euclidean") if 1 < n_labels < len(sample) else np.nan
         rows.append({"k": k, "inertia": result.inertia, "silhouette": score, "sample_books": len(sample),
                      "min_books": int(sizes.min()), "max_books": int(sizes.max()),
                      "unassigned_books": int((result.labels < 0).sum()), "n_iter": result.n_iter})
@@ -88,7 +129,9 @@ def cluster_overview(features: BookFeatures, clusters: BookClusters, n_tags: int
     valid = clusters.labels >= 0
     mean = np.asarray(features.matrix[valid].mean(axis=0)).ravel()
     rows = []
-    for cluster, center in enumerate(clusters.centers):
+    for cluster in range(len(clusters.centers)):
+        # NOTE: 태그 해석은 원본 공간의 군집 평균으로 한다. SVD 중심의 축을 태그에 대응시키지 않는다.
+        center = np.asarray(features.matrix[clusters.labels == cluster].mean(axis=0)).ravel()
         top = np.lexsort((features.tag_names, -center))
         difference = center - mean
         distinctive = np.lexsort((features.tag_names, -difference))
@@ -99,14 +142,15 @@ def cluster_overview(features: BookFeatures, clusters: BookClusters, n_tags: int
 
 
 def representative_books(features: BookFeatures, clusters: BookClusters, n_books: int = 5) -> pd.DataFrame:
-    """각 군집 안에서 중심까지 Euclidean 거리가 가까운 책을 고른다. 동점은 책 ID 순서다."""
+    """실제 군집 좌표에서 중심까지 Euclidean 거리가 가까운 책을 고른다. 동점은 책 ID 순서다."""
     _check_alignment(features, clusters)
     if not isinstance(n_books, (int, np.integer)) or isinstance(n_books, bool) or n_books < 1:
         raise ValueError("n_books는 1 이상의 정수여야 합니다.")
+    matrix = features.matrix if clusters.space is None else clusters.space.matrix
     rows = []
     for cluster, center in enumerate(clusters.centers):
         positions = np.flatnonzero(clusters.labels == cluster)
-        distances = euclidean_distances(features.matrix[positions], center.reshape(1, -1)).ravel()
+        distances = euclidean_distances(matrix[positions], center.reshape(1, -1)).ravel()
         order = np.lexsort((features.book_ids[positions], distances))[:n_books]
         for rank, index in enumerate(order, start=1):
             rows.append({"cluster": cluster, "rank": rank, "book_id": int(features.book_ids[positions[index]]),
@@ -117,5 +161,58 @@ def representative_books(features: BookFeatures, clusters: BookClusters, n_books
 def _check_alignment(features: BookFeatures, clusters: BookClusters) -> None:
     if not np.array_equal(features.book_ids, clusters.book_ids) or len(clusters.labels) != len(features.book_ids):
         raise ValueError("군집과 특징 행렬의 책 ID 순서가 다릅니다.")
-    if clusters.centers.ndim != 2 or clusters.centers.shape[1] != features.matrix.shape[1]:
-        raise ValueError("군집 중심과 태그 열 수가 다릅니다.")
+    matrix = features.matrix if clusters.space is None else clusters.space.matrix
+    if clusters.space is not None and not np.array_equal(features.book_ids, clusters.space.book_ids):
+        raise ValueError("군집 좌표와 책 ID 순서가 다릅니다.")
+    if clusters.centers.ndim != 2 or clusters.centers.shape[1] != matrix.shape[1]:
+        raise ValueError("군집 중심과 군집 좌표의 열 수가 다릅니다.")
+    if not np.isfinite(clusters.centers).all() or not np.isin(clusters.labels, np.arange(-1, len(clusters.centers))).all():
+        raise ValueError("군집 중심과 군집 번호를 확인하세요.")
+
+
+def _nonzero_rows(matrix: csr_matrix | np.ndarray) -> np.ndarray:
+    squares = matrix.multiply(matrix) if issparse(matrix) else matrix * matrix
+    return np.asarray(squares.sum(axis=1)).ravel() > 0
+
+
+def cluster_diagnostics(
+    features: BookFeatures, clusters: BookClusters, sample_book_ids: np.ndarray,
+    reference_features: BookFeatures | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """같은 표본의 원본·군집·공통 기준 공간 silhouette를 책별·군집별로 반환한다.
+
+    reference_features는 다른 태그 설정도 공정하게 비교할 고정 기준이다.
+    영벡터·미배정 책이 표본에 있으면 조용히 빼지 않고 오류를 내어 평가 대상 변경을 막는다.
+    """
+    _check_alignment(features, clusters)
+    reference = features if reference_features is None else reference_features
+    if not np.array_equal(reference.book_ids, features.book_ids):
+        raise ValueError("공통 기준 특징과 책 ID 순서가 다릅니다.")
+    ids = np.asarray(sample_book_ids)
+    if ids.ndim != 1 or len(ids) < 3 or len(np.unique(ids)) != len(ids):
+        raise ValueError("표본에는 중복 없는 책 ID가 3개 이상 필요합니다.")
+    positions = pd.Index(features.book_ids).get_indexer(ids)
+    if (positions < 0).any():
+        raise ValueError("표본에 특징 행렬에 없는 책 ID가 있습니다.")
+    matrix = features.matrix if clusters.space is None else clusters.space.matrix
+    labels = clusters.labels[positions]
+    if ((labels < 0).any() or not _nonzero_rows(features.matrix[positions]).all()
+            or not _nonzero_rows(reference.matrix[positions]).all() or not _nonzero_rows(matrix[positions]).all()):
+        raise ValueError("표본에 영벡터 또는 미배정 책이 있습니다.")
+    if not 1 < len(np.unique(labels)) < len(ids):
+        raise ValueError("silhouette에는 2개 이상, 표본 수 미만의 군집이 필요합니다.")
+    original = silhouette_samples(features.matrix[positions], labels, metric="euclidean")
+    reduced = original if clusters.space is None or clusters.space.n_components is None else silhouette_samples(matrix[positions], labels, metric="euclidean")
+    common = original if reference is features else silhouette_samples(reference.matrix[positions], labels, metric="euclidean")
+    per_book = pd.DataFrame({"book_id": ids, "cluster": labels, "original_silhouette": original,
+                             "clustering_silhouette": reduced, "reference_silhouette": common})
+    rows = []
+    for cluster in range(len(clusters.centers)):
+        group = per_book[per_book["cluster"] == cluster]
+        row = {"cluster": cluster, "books": int((clusters.labels == cluster).sum()), "sample_books": len(group)}
+        for name in ("original", "clustering", "reference"):
+            values = group[f"{name}_silhouette"]
+            row[f"{name}_silhouette"] = values.mean()
+            row[f"{name}_negative_rate"] = float((values < 0).mean()) if len(values) else np.nan
+        rows.append(row)
+    return per_book, pd.DataFrame(rows)
