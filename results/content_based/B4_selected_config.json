@@ -1,0 +1,18 @@
+{
+  "candidate_id": "C01",
+  "config": {
+    "extended": false,
+    "weighting": "binary",
+    "min_df": 2,
+    "sublinear_tf": true,
+    "profile_weighting": "positive"
+  },
+  "criterion": "mean cold_tune NDCG@10 over history sizes 1,3,5,10; ties: warm_val NDCG@10 then candidate_id",
+  "seed": 42,
+  "n_warm_users": 1000,
+  "n_cold_users": 2500,
+  "train_source": "split.train",
+  "final_evaluation_performed": false,
+  "cold_mean_ndcg@10": 0.1838214089445948,
+  "warm_ndcg@10": 0.05157104508000242
+}
