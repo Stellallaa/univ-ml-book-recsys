@@ -1,0 +1,51 @@
+cluster,rank,book_id,distance,title,main_author
+0,1,1161,0.7183495914029857,Cannery Row,John Steinbeck
+0,2,129,0.7262267950652036,One Flew Over the Cuckoo's Nest,Ken Kesey
+0,3,395,0.7275407436791808,For Whom the Bell Tolls,Ernest Hemingway
+0,4,264,0.7339358002629909,The Sun Also Rises,Ernest Hemingway
+0,5,83,0.7343903726264661,A Tale of Two Cities,Charles Dickens
+1,1,3408,0.6211721705245038,"Hunting Ground (Alpha & Omega, #2)",Patricia Briggs
+1,2,1889,0.6231067764461728,"Bone Crossed (Mercy Thompson, #4)",Patricia Briggs
+1,3,1653,0.6281440432660816,"Blood Bound (Mercy Thompson, #2)",Patricia Briggs
+1,4,980,0.6282638155531857,"Moon Called (Mercy Thompson, #1)",Patricia Briggs
+1,5,3514,0.6356078232486712,"First Drop of Crimson (Night Huntress World, #1)",Jeaniene Frost
+2,1,477,0.674007899679301,"Killing Floor (Jack Reacher, #1)",Lee Child
+2,2,1138,0.6836678077164341,Tell No One,Harlan Coben
+2,3,5129,0.6847672578564744,"Hide (Detective D.D. Warren, #2)",Lisa Gardner
+2,4,2055,0.6882860013713096,The Woods,Harlan Coben
+2,5,1876,0.6914458228770402,"The Affair (Jack Reacher, #16)",Lee Child
+3,1,4225,0.7795945757605401,"The Art of Asking; or, How I Learned to Stop Worrying and Let People Help",Amanda Palmer
+3,2,973,0.7876619111597779,"The Happiness Project: Or Why I Spent a Year Trying to Sing in the Morning, Clean My Closets, Fight Right, Read Aristotle, and Generally Have More Fun",Gretchen Rubin
+3,3,329,0.7898489409042556,The Last Lecture,Randy Pausch
+3,4,3270,0.7920598428617261,An Astronaut's Guide to Life on Earth,Chris Hadfield
+3,5,4824,0.7933165126021774,Smoke Gets in Your Eyes: And Other Lessons from the Crematory,Caitlin Doughty
+4,1,330,0.679574064770523,"The Eye of the World (Wheel of Time, #1)",Robert Jordan
+4,2,746,0.7006070148512209,"The Lies of Locke Lamora (Gentleman Bastard, #1)",Scott Lynch
+4,3,949,0.7032865739641689,"The Fires of Heaven (Wheel of Time, #5)",Robert Jordan
+4,4,429,0.7077710919103736,"The Color of Magic (Discworld, #1; Rincewind #1)",Terry Pratchett
+4,5,5429,0.7081201135928754,"The Curse of Chalion (World of the Five Gods, #1)",Lois McMaster Bujold
+5,1,313,0.6822662771300876,The Light Between Oceans,M.L. Stedman
+5,2,689,0.6868416457209012,Beautiful Ruins,Jess Walter
+5,3,1012,0.696204865527034,The Secret Keeper,Kate Morton
+5,4,1190,0.6992052981896254,Rules of Civility,Amor Towles
+5,5,692,0.701220261838539,"Firefly Lane (Firefly Lane, #1)",Kristin Hannah
+6,1,812,0.5991642335200731,"Fallen Too Far (Rosemary Beach, #1; Too Far, #1)",Abbi Glines
+6,2,796,0.6081605757206834,"On Dublin Street (On Dublin Street, #1)",Samantha Young
+6,3,1702,0.6099251341381169,"Rule (Marked Men, #1)",Jay Crownover
+6,4,1143,0.6143120626639134,"Beautiful Bastard (Beautiful Bastard, #1)",Christina Lauren
+6,5,1470,0.6293831504823926,"This Man (This Man, #1)",Jodi Ellen Malpas
+7,1,928,0.6811891616035136,"The Raven Boys (The Raven Cycle, #1)",Maggie Stiefvater
+7,2,759,0.6844833506781904,"Bloodlines (Bloodlines, #1)",Richelle Mead
+7,3,837,0.6878746837626132,"Every Day (Every Day, #1)",David Levithan
+7,4,632,0.6889066908724378,"Shatter Me (Shatter Me, #1)",Tahereh Mafi
+7,5,1860,0.6894580292227446,"Ruby Red (Precious Stone Trilogy, #1)",Kerstin Gier
+8,1,335,0.6614280164182038,James and the Giant Peach,Roald Dahl
+8,2,59,0.6738011977703108,Charlotte's Web,E.B. White
+8,3,444,0.6774764545381076,"Winnie-the-Pooh (Winnie-the-Pooh, #1)",A.A. Milne
+8,4,1662,0.6777346111011564,Fantastic Mr. Fox,Roald Dahl
+8,5,2741,0.6796976856885101,Danny the Champion of the World,Roald Dahl
+9,1,1077,0.6653349115897138,"Fables, Vol. 1: Legends in Exile",Bill Willingham
+9,2,2110,0.6745453974129925,"Scott Pilgrim, Volume 2: Scott Pilgrim vs. The World",Bryan Lee O'Malley
+9,3,753,0.6750214484016386,"Scott Pilgrim, Volume 1: Scott Pilgrim's Precious Little Life",Bryan Lee O'Malley
+9,4,3932,0.6785401290052171,"Scott Pilgrim, Volume 3: Scott Pilgrim & The Infinite Sadness",Bryan Lee O'Malley
+9,5,4739,0.6790875408130507,"Scott Pilgrim, Volume 5: Scott Pilgrim Vs. the Universe",Bryan Lee O'Malley
