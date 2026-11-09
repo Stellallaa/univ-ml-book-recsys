@@ -32,3 +32,16 @@ def test_recommend_excludes_books_in_history():
 
     # Then
     assert recs == {7: [20, 30]}
+
+
+def test_recommend_ignores_read_books_of_users_not_being_recommended():
+    # Given: 추천받는 독자는 7, 8이고 read에는 점수표에 없는 독자 5의 책 10이 섞여 있다
+    model = PopularityRecommender().fit(_ratings([(1, 10, 5), (2, 10, 4), (1, 20, 5)]))
+    history = _ratings([(7, 30, 5), (8, 30, 4)])
+    read = _ratings([(5, 10, 5), (7, 30, 5), (8, 30, 4)])
+
+    # When
+    recs = model.recommend(history, k=1, read=read)
+
+    # Then: 마지막 행인 독자 8의 책 10이 대신 지워지지 않는다
+    assert recs == {7: [10], 8: [10]}
