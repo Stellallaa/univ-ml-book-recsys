@@ -18,7 +18,6 @@ def _recommend(model: Recommender, history: pd.DataFrame, read: pd.DataFrame, k:
     users = history["user_id"].unique()
     recs = {}
     for start in range(0, len(users), BATCH_SIZE):
-        # NOTE: dict |= other(Python 3.9+)는 other의 키·값을 dict에 합쳐 넣는다.
         batch = users[start : start + BATCH_SIZE]
         recs |= model.recommend(history[history["user_id"].isin(batch)], k, read[read["user_id"].isin(batch)])
     return recs
@@ -82,7 +81,6 @@ def evaluate_warm(
     answers = getattr(split, on)
     users = np.sort(answers["user_id"].unique())
     if n_users is not None:
-        # NOTE: default_rng(seed)는 시드를 고정한 난수 생성기다. choice(users, size, replace=False)는 users에서 size명을 중복 없이 뽑는다.
         users = np.random.default_rng(seed).choice(users, size=min(n_users, len(users)), replace=False)
     # NOTE: test 시점의 독자는 val의 책도 이미 읽었으므로 이력에 val을 붙인다.
     history = split.train if on == "val" else pd.concat([split.train, split.val])
@@ -106,7 +104,7 @@ def evaluate_cold(
     if on not in ("tune", "final"):
         raise ValueError(f"on은 'tune' 또는 'final'이어야 합니다: {on!r}")
     cold = getattr(split, f"cold_{on}")
-    # NOTE: 파일 순서가 시간순이라 정렬하지 않고 순번을 매긴다. cumcount()는 독자 안에서 0, 1, 2…를 매긴다.
+    # NOTE: 파일 순서가 시간순이라 정렬하지 않고 순번을 매긴다.
     position = cold.groupby("user_id").cumcount()
     read = cold[position < max(history_sizes)]
     answers = cold[(position >= max(history_sizes)) & (cold["rating"] >= RELEVANT_RATING)]
