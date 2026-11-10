@@ -1,8 +1,7 @@
 """bias 기준선(A6). 전체 평균에 독자 성향(후하게 주는지)과 책 성향(평이 좋은지)만 더해 별점을 예측한다. RMSE 평가에만 쓴다.
 
-출처: 예측식은 Koren, Bell, Volinsky (2009), "Matrix Factorization Techniques for Recommender Systems", IEEE Computer 42(8)의
-"Adding Biases" 절에서 MF의 벡터 곱을 뺀 것이다. (합) / (평점 수 + reg)로 성향을 구하는 방법은 Koren (2010),
-"Factor in the Neighbors: Scalable and Accurate Collaborative Filtering", ACM TKDD 4(1)의 baseline estimates를 따랐다.
+출처: Koren, Y. & Bell, R. (2011). Advances in Collaborative Filtering. Recommender Systems Handbook, Springer. 2.1절
+"Baseline predictors"의 b_ui = μ + b_u + b_i와, (합) / (λ + 평점 수)로 b_i·b_u를 따로 구하는 방법(논문은 1회, 여기서는 n_iters회 반복).
 """
 
 from __future__ import annotations
