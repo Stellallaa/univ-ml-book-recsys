@@ -108,9 +108,9 @@ uv run python scripts/run_baselines.py --final  # test, cold_final으로 채점 
 
 | 기준선 | val RMSE |
 | --- | --- |
-| bias | 0.8619 |
+| bias | 0.8616 |
 
 - 두 순위 기준선은 독자의 이력을 보지 않아 Goal 1에서 남긴 평점 수(1·3·5·10개)와 상관없이 점수가 같습니다.
 - Goodreads 평점순은 인기순보다 훨씬 낮습니다. 평균 별점 상위가 『The Complete Calvin and Hobbes』, 『Words of Radiance』(시리즈 2권), 해리 포터 박스 세트처럼 시리즈 후속권·모음집이라, 이미 팬인 독자만 읽어서 평이 높고 대부분의 독자는 읽지 않은 책입니다.
 - `average_rating`은 우리 `ratings.csv`가 아니라 Goodreads 사이트 전체 독자의 집계입니다. 외부 정보를 쓴 기준선이라는 점을 결과와 함께 밝힙니다.
-- bias의 규제 세기(`USER_REG`·`BOOK_REG` = 10)와 반복 횟수(`N_ITERS` = 10)는 val RMSE로 골랐습니다. 0~25 사이 조합에서 val RMSE는 0.8619~0.8644로 차이가 작았습니다.
+- bias의 규제 세기(`USER_REG`·`BOOK_REG` = 10)와 반복 횟수(`N_ITERS` = 10)는 val RMSE로 골랐습니다. 0~25 사이 조합에서 val RMSE는 0.8616~0.8643으로 차이가 작았습니다. 예측은 MF와 같이 1~5로 자릅니다.

@@ -46,7 +46,8 @@ class BiasPredictor(RatingPredictor):
         return stats["sum"] / (stats["size"] + reg)
 
     def predict(self, pairs: pd.DataFrame) -> np.ndarray:
-        """(user_id, book_id) 쌍마다 예상 별점을 돌려준다."""
+        """(user_id, book_id) 쌍마다 예상 별점을 1~5로 잘라 돌려준다."""
         user = pairs["user_id"].map(self.user_bias).fillna(0.0).to_numpy()
         book = pairs["book_id"].map(self.book_bias).fillna(0.0).to_numpy()
-        return self.mean + user + book
+        # NOTE: MF(collaborative_filtering/als.py)와 같은 조건으로 비교하려고 별점 범위 밖 예측을 자른다.
+        return np.clip(self.mean + user + book, 1, 5)

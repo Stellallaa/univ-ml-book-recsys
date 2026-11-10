@@ -57,3 +57,15 @@ def test_bias_predicts_mean_for_unknown_user_and_book():
 
     # Then
     assert predicted == pytest.approx([10 / 3])
+
+
+def test_bias_clips_predictions_to_rating_range():
+    # Given: 후한 독자 1이 높은 평의 책 10을, 짠 독자 2가 낮은 평의 책 20을 만난다
+    train = _ratings([(1, 10, 5), (1, 30, 5), (2, 20, 1), (2, 30, 1), (3, 10, 5), (3, 20, 1)])
+    model = BiasPredictor(user_reg=0, book_reg=0, n_iters=1).fit(train)
+
+    # When
+    predicted = model.predict(pd.DataFrame({"user_id": [1, 2], "book_id": [10, 20]}))
+
+    # Then
+    np.testing.assert_allclose(predicted, [5, 1])
