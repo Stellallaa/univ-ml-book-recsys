@@ -86,9 +86,9 @@ evaluate_rmse(model, split, on="test")
 
 | 기준선 | 위치 | 하는 일 | 채점 |
 | --- | --- | --- | --- |
-| 인기순 | `models/popularity.py` | train에서 평점이 많이 달린 책을 모든 독자에게 똑같이 추천 | 순위 지표 |
-| Goodreads 평점순 | `models/goodreads_rating.py` | `books.csv`의 `average_rating`이 높은 책을 모든 독자에게 똑같이 추천 | 순위 지표 |
-| bias | `models/bias.py` | 전체 평균 + 독자 성향(후하게 주는지) + 책 성향(평이 좋은지)으로 별점 예측 | RMSE |
+| 인기순 | `models/baselines/popularity.py` | train에서 평점이 많이 달린 책을 모든 독자에게 똑같이 추천 | 순위 지표 |
+| Goodreads 평점순 | `models/baselines/goodreads_rating.py` | `books.csv`의 `average_rating`이 높은 책을 모든 독자에게 똑같이 추천 | 순위 지표 |
+| bias | `models/baselines/bias.py` | 전체 평균 + 독자 성향(후하게 주는지) + 책 성향(평이 좋은지)으로 별점 예측 | RMSE |
 
 ```bash
 uv run python scripts/run_baselines.py          # val, cold_tune으로 채점

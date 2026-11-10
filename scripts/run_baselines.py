@@ -10,9 +10,9 @@ import pandas as pd
 
 from bookrec.data import load_books, load_split, load_to_read
 from bookrec.evaluation import evaluate_cold, evaluate_rmse, evaluate_warm
-from bookrec.models.bias import BiasPredictor
-from bookrec.models.goodreads_rating import GoodreadsRatingRecommender
-from bookrec.models.popularity import PopularityRecommender
+from bookrec.models.baselines.bias import BiasPredictor
+from bookrec.models.baselines.goodreads_rating import GoodreadsRatingRecommender
+from bookrec.models.baselines.popularity import PopularityRecommender
 
 OUT_DIR = Path(__file__).resolve().parents[1] / "results" / "evaluation"
 

@@ -3,8 +3,8 @@ import pandas as pd
 import pytest
 
 from bookrec.models.base import BOOK_IDS
-from bookrec.models.bias import BiasPredictor
-from bookrec.models.goodreads_rating import GoodreadsRatingRecommender
+from bookrec.models.baselines.bias import BiasPredictor
+from bookrec.models.baselines.goodreads_rating import GoodreadsRatingRecommender
 
 
 def _ratings(rows):
