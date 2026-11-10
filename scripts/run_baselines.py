@@ -18,6 +18,7 @@ OUT_DIR = Path(__file__).resolve().parents[1] / "results" / "evaluation"
 
 
 def main():
+    # NOTE: argparse는 명령행 옵션을 읽는다. action="store_true"는 --final을 주면 True, 안 주면 False다.
     parser = argparse.ArgumentParser()
     parser.add_argument("--final", action="store_true", help="test·cold_final로 채점한다")
     warm_on, cold_on = ("test", "final") if parser.parse_args().final else ("val", "tune")
@@ -31,6 +32,7 @@ def main():
     warm, cold = [], {}
     for name, model in rankers.items():
         model.fit(train)
+        # NOTE: dict | dict는 두 dict를 합친다(Python 3.9+). 모델 이름 열을 지표 dict 앞에 붙인다.
         warm.append({"model": name} | evaluate_warm(model, split, on=warm_on, to_read=to_read))
         cold[name] = evaluate_cold(model, split, on=cold_on, to_read=to_read)
         print(f"done {name}")

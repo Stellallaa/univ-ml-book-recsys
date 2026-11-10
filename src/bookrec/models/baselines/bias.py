@@ -1,4 +1,9 @@
-"""bias 기준선(A6). 전체 평균에 독자 성향(후하게 주는지)과 책 성향(평이 좋은지)만 더해 별점을 예측한다. RMSE 평가에만 쓴다."""
+"""bias 기준선(A6). 전체 평균에 독자 성향(후하게 주는지)과 책 성향(평이 좋은지)만 더해 별점을 예측한다. RMSE 평가에만 쓴다.
+
+출처: 예측식은 Koren, Bell, Volinsky (2009), "Matrix Factorization Techniques for Recommender Systems", IEEE Computer 42(8)의
+"Adding Biases" 절에서 MF의 벡터 곱을 뺀 것이다. (합) / (평점 수 + reg)로 성향을 구하는 방법은 Koren (2010),
+"Factor in the Neighbors: Scalable and Accurate Collaborative Filtering", ACM TKDD 4(1)의 baseline estimates를 따랐다.
+"""
 
 from __future__ import annotations
 
@@ -7,9 +12,10 @@ import pandas as pd
 
 from bookrec.models.base import RatingPredictor
 
+# NOTE: reg는 성향을 구할 때 분모에 더하는 값으로, "오차 0인 가짜 평점 reg개"를 붙이는 효과다. 클수록 평점이 적은 독자·책의 성향이 0에 가까워진다.
 USER_REG = 10.0
 BOOK_REG = 10.0
-N_ITERS = 10
+N_ITERS = 10  # NOTE: 책 성향 → 독자 성향을 번갈아 다시 계산하는 횟수
 
 
 class BiasPredictor(RatingPredictor):
@@ -23,6 +29,7 @@ class BiasPredictor(RatingPredictor):
     def fit(self, train: pd.DataFrame) -> BiasPredictor:
         """책 성향과 독자 성향을 번갈아 n_iters번 다시 계산한다. 평점이 적을수록 reg 때문에 성향이 0에 가까워진다."""
         self.mean = train["rating"].mean()
+        # NOTE: 첫 회차에는 독자 성향을 모두 0으로 본다(빈 Series).
         self.user_bias = pd.Series(dtype=float)
         for _ in range(self.n_iters):
             # NOTE: 한쪽 성향을 고정하면 다른 쪽은 (남은 오차 합) / (평점 수 + reg)가 최적이다(정규화한 최소제곱).
@@ -32,6 +39,7 @@ class BiasPredictor(RatingPredictor):
 
     def _shrunk_mean(self, train: pd.DataFrame, key: str, other_bias: pd.Series, other_key: str, reg: float) -> pd.Series:
         """상대편 성향을 뺀 오차를 key별로 더해 (평점 수 + reg)로 나눈다."""
+        # NOTE: Series.map(Series)는 왼쪽 값(ID)을 오른쪽 Series의 인덱스에서 찾아 그 값으로 바꾼다. 없는 ID는 NaN이 되고 fillna(0.0)가 0으로 채운다.
         residual = train["rating"] - self.mean - train[other_key].map(other_bias).fillna(0.0)
         # NOTE: groupby(열).agg(["sum", "size"])는 key별 오차 합과 평점 수를 한 번에 구한다.
         stats = residual.groupby(train[key]).agg(["sum", "size"])
