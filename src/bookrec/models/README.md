@@ -6,6 +6,8 @@
 | --- | --- | --- |
 | `base.py` | A2 공통 인터페이스 (`Recommender`, `RatingPredictor`) | 팀원 A |
 | `popularity.py` | A2 예시 모델, A6 인기순 기준선 | 팀원 A |
+| `goodreads_rating.py` | A6 Goodreads 평점순 기준선 | 팀원 A |
+| `bias.py` | A6 bias 기준선 (RMSE용) | 팀원 A |
 | `content_based/` | B2~B5 content-based filtering | 팀원 B |
 | `collaborative_filtering/` | C1~C3 model-based collaborative filtering | 팀원 C |
 | `hybrid/` | D3 hybrid filtering | 팀원 D |
