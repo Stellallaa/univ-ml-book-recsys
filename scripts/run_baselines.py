@@ -32,7 +32,6 @@ def main():
     warm, cold = [], {}
     for name, model in rankers.items():
         model.fit(train)
-        # NOTE: dict | dict는 두 dict를 합친다(Python 3.9+). 모델 이름 열을 지표 dict 앞에 붙인다.
         warm.append({"model": name} | evaluate_warm(model, split, on=warm_on, to_read=to_read))
         cold[name] = evaluate_cold(model, split, on=cold_on, to_read=to_read)
         print(f"done {name}")
