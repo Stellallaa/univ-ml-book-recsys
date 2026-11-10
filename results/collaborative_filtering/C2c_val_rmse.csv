@@ -1,0 +1,4 @@
+model,val_rmse
+전체 평균,0.9864763574013539
+bias 기준선,0.8658571806315452
+MF 별점 예측용 (ALSMatrixFactorization),0.8391529579509914
