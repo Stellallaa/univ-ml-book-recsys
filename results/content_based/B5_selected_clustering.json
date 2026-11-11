@@ -1,0 +1,24 @@
+{
+  "representative_policy": "author_series; relax series then author then title if insufficient",
+  "k": 10,
+  "seed": 42,
+  "n_init": 10,
+  "max_iter": 300,
+  "tol": 0.0001,
+  "algorithm": "lloyd",
+  "initialization": "k-means++",
+  "silhouette_metric": "euclidean",
+  "sample_size": 2000,
+  "minimum_cluster_books": 100,
+  "criterion": "highest sampled silhouette among candidates with min_books>=100; tie: smaller k",
+  "feature_candidate_id": "C17",
+  "feature_config": {
+    "extended": false,
+    "weighting": "binary",
+    "min_df": 1,
+    "sublinear_tf": true,
+    "profile_weighting": "positive"
+  },
+  "silhouette": 0.06138707371977224,
+  "unassigned_books": 0
+}

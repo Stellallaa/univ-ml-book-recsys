@@ -1,0 +1,2 @@
+weighting,min_df,sublinear_tf,books,features,nonzero_values,density,zero_books,csr_bytes
+tfidf,2,True,10000,16523,662281,0.004008237002965563,0,7987376
