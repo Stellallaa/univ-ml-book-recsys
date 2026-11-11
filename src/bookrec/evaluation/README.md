@@ -79,3 +79,39 @@ evaluate_rmse(model, split, on="test")
 | 메모리 | 독자를 500명씩 나눠 추천받습니다. 한 번에 넣으면 점수표(독자 수 × 1만 권)가 수 GB가 됩니다 |
 
 - **Goal 1과 Goal 2의 숫자를 서로 비교하지 않습니다.** Goal 1은 11번째 이후 평점 전체(독자당 약 100권)가 정답 후보이고, Goal 2는 마지막 15%(약 17권)만 정답 후보라 값의 크기가 다릅니다. 비교는 같은 목표 안에서 모델끼리만 합니다.
+
+## 기준선 (A6)
+
+모든 모델 결과를 기준선 대비로도 보여 주기 위해, 아주 단순한 추천 방법 세 가지를 같은 평가 함수로 채점합니다.
+
+| 기준선 | 위치 | 하는 일 | 채점 |
+| --- | --- | --- | --- |
+| 인기순 | `models/baselines/popularity.py` | train에서 평점이 많이 달린 책을 모든 독자에게 똑같이 추천 | 순위 지표 |
+| Goodreads 평점순 | `models/baselines/goodreads_rating.py` | `books.csv`의 `average_rating`이 높은 책을 모든 독자에게 똑같이 추천 | 순위 지표 |
+| bias | `models/baselines/bias.py` | 전체 평균 + 독자 성향(후하게 주는지) + 책 성향(평이 좋은지)으로 별점 예측 | RMSE |
+
+```bash
+uv run python scripts/run_baselines.py          # val, cold_tune으로 채점
+uv run python scripts/run_baselines.py --final  # test, cold_final으로 채점 (마지막에 한 번)
+```
+
+결과는 `results/evaluation/`에 `baselines_warm_<구간>.csv`(Goal 2), `baselines_cold_<구간>.csv`(Goal 1), `baselines_rmse_<구간>.csv`(RMSE)로 저장됩니다. `--final`은 val까지 학습에 넣어 다시 학습합니다.
+
+### 튜닝 구간 결과 (val, cold_tune)
+
+| 목표 | 기준선 | P@10 | R@10 | NDCG@10 | to_read 적중 |
+| --- | --- | --- | --- | --- | --- |
+| Goal 2 기존 독자 (48,150명) | 인기순 | 0.0329 | 0.0293 | 0.0364 | 0.0286 |
+| Goal 2 기존 독자 (48,150명) | Goodreads 평점순 | 0.0017 | 0.0015 | 0.0020 | 0.0006 |
+| Goal 1 신규 독자 (2,500명) | 인기순 | 0.2072 | 0.0303 | 0.2213 | 0.0201 |
+| Goal 1 신규 독자 (2,500명) | Goodreads 평점순 | 0.0084 | 0.0012 | 0.0089 | 0.0006 |
+
+| 기준선 | val RMSE |
+| --- | --- |
+| bias | 0.8616 |
+
+- 두 순위 기준선은 독자의 이력을 보지 않아 Goal 1에서 남긴 평점 수(1·3·5·10개)와 상관없이 점수가 같습니다.
+- Goodreads 평점순은 인기순보다 훨씬 낮습니다. 평균 별점 상위가 『The Complete Calvin and Hobbes』, 『Words of Radiance』(시리즈 2권), 해리 포터 박스 세트처럼 시리즈 후속권·모음집이라, 이미 팬인 독자만 읽어서 평이 높고 대부분의 독자는 읽지 않은 책입니다.
+- `average_rating`은 우리 `ratings.csv`가 아니라 Goodreads 사이트 전체 독자의 집계입니다. 외부 정보를 쓴 기준선이라는 점을 결과와 함께 밝힙니다.
+- bias는 MF 예측식(전체 평균 + 독자 성향 + 책 성향 + 독자·책 벡터 곱)에서 벡터 곱만 뺀 모델이라, MF와 RMSE를 나란히 놓으면 벡터를 더해 얼마나 좋아졌는지 볼 수 있습니다. 다만 규제 방식과 학습 방법이 MF와 달라서 RMSE 차이 전부를 벡터 덕분이라고 하지는 않습니다. 방법 출처는 Koren & Bell (2011), "Advances in Collaborative Filtering", Recommender Systems Handbook 2.1절입니다.
+- bias의 규제 세기(`USER_REG`·`BOOK_REG` = 10)와 반복 횟수(`N_ITERS` = 10)는 val RMSE로 골랐습니다. 0~25 사이 조합에서 val RMSE는 0.8616~0.8643으로 차이가 작았습니다. 예측은 MF와 같이 1~5로 자릅니다.

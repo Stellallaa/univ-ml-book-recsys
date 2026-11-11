@@ -5,7 +5,7 @@
 | 위치 | 작업 | 담당 |
 | --- | --- | --- |
 | `base.py` | A2 공통 인터페이스 (`Recommender`, `RatingPredictor`) | 팀원 A |
-| `popularity.py` | A2 예시 모델, A6 인기순 기준선 | 팀원 A |
+| `baselines/` | A6 기준선 (인기순, Goodreads 평점순, bias). 인기순은 A2 예시 모델이기도 함 | 팀원 A |
 | `content_based/` | B2~B5 content-based filtering | 팀원 B |
 | `collaborative_filtering/` | C1~C3 model-based collaborative filtering | 팀원 C |
 | `hybrid/` | D3 hybrid filtering | 팀원 D |
@@ -16,4 +16,4 @@
 - `score`는 행이 `user_id`, 열이 `BOOK_IDS`(책 1~10000)인 점수표를 돌려줍니다. 점수가 높을수록 추천합니다.
 - `score`는 독자 ID가 아니라 평점 이력(`user_id`, `book_id`, `rating`)을 받습니다. 이력이 1개뿐인 신규 독자에게도 동작해야 합니다.
 - 별점 자체를 예측하는 모델(MF, bias 기준선)은 `RatingPredictor`도 상속하고 `predict(pairs)`를 구현합니다. RMSE 평가에 쓰입니다.
-- 만드는 방법은 `popularity.py`를 참고합니다.
+- 만드는 방법은 `baselines/popularity.py`를 참고합니다.

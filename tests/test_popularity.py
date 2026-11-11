@@ -1,7 +1,7 @@
 import pandas as pd
 
 from bookrec.models.base import BOOK_IDS
-from bookrec.models.popularity import PopularityRecommender
+from bookrec.models.baselines.popularity import PopularityRecommender
 
 
 def _ratings(rows):
