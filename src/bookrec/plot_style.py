@@ -14,6 +14,7 @@ MODEL_COLORS = {"baseline": "#898781", "cb": "#2a78d6", "mf": "#eb6834", "hybrid
 
 def setup():
     """팀 공통 그래프 스타일을 적용한다."""
+    # NOTE: addfont로 동봉한 나눔고딕을 등록하고 font.family에 그 이름을 쓴다. axes.unicode_minus=False는 한글 폰트에서 음수 기호(−)가 깨지지 않게 한다.
     font_manager.fontManager.addfont(FONT_PATH)
     plt.rcParams.update({
         "font.family": font_manager.FontProperties(fname=FONT_PATH).get_name(),
