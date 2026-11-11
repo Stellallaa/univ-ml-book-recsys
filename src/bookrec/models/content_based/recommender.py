@@ -24,7 +24,8 @@ class ContentBasedRecommender(Recommender):
             raise ValueError("features는 유한한 비음수 가중치와 하나 이상의 특징을 가져야 합니다.")
         self.features = features
         self.profile_weighting = profile_weighting
-        # NOTE: B2 행렬은 이미 정규화되어 있다. 외부 BookFeatures 입력도 같은 점수 범위를 갖도록 복사해 정규화한다.
+        # NOTE: norm="l2"는 영벡터를 제외한 책 벡터의 유클리드 길이를 1로 맞춘다.
+        #       B2 밖에서 만든 BookFeatures도 같은 방식으로 처리하며, copy=True로 입력 행렬을 보존한다.
         self.book_vectors = normalize(features.matrix, norm="l2", copy=True)
 
     def fit(self, train: pd.DataFrame) -> ContentBasedRecommender:
@@ -41,7 +42,8 @@ class ContentBasedRecommender(Recommender):
         users, profiles = self._profiles(history)
         if not len(users):
             return pd.DataFrame(index=users, columns=BOOK_IDS, dtype=float)
-        # NOTE: normalize는 영벡터를 그대로 둔다. 희소 취향 벡터로 곱한 뒤 최종 점수표만 dense 배열로 만든다.
+        # NOTE: norm="l2"는 영벡터를 제외한 취향 벡터의 길이를 1로 맞춘다.
+        #       길이가 1인 책 벡터와 내적하면 코사인 유사도가 된다. 최종 점수표만 dense 배열로 만든다.
         scores = (normalize(profiles, norm="l2") @ self.book_vectors.T).toarray()
         fallback = np.asarray(profiles.getnnz(axis=1)).ravel() == 0
         scores[fallback] = self.fallback_scores
@@ -63,6 +65,8 @@ class ContentBasedRecommender(Recommender):
         rows = pd.Index(users).get_indexer(history["user_id"])
         cols = pd.Index(BOOK_IDS).get_indexer(history["book_id"])
         # NOTE: positive는 4점=1, 5점=2이며 1~3점은 취향에서 제외한다. rating은 별점 자체를 가중치로 쓴다.
+        # NOTE: 각 평점 가중치를 (rows의 독자 행, cols의 책 열)에 넣는다.
+        #       shape는 입력의 독자 수 × 전체 책 수로 두어 책 특징 행렬과 곱할 수 있게 한다.
         history_matrix = csr_matrix((weights, (rows, cols)), shape=(len(users), len(BOOK_IDS)))
         profiles = csr_matrix(history_matrix @ self.book_vectors)
         profiles.eliminate_zeros()

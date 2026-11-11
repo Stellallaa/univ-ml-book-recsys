@@ -52,8 +52,11 @@ def prepare_cluster_space(features: BookFeatures, n_components: int | None = Non
     if (not isinstance(n_components, (int, np.integer)) or isinstance(n_components, bool)
             or not 1 <= n_components < min(int(nonzero.sum()), matrix.shape[1])):
         raise ValueError("SVD 차원은 1 이상이며 유효 책 수와 태그 수보다 작아야 합니다.")
+    # NOTE: n_components는 축소 후 차원 수, n_iter=7은 randomized SVD의 거듭제곱 반복 횟수다.
+    #       random_state는 근사 계산에 사용하는 난수 시드를 고정한다.
     reducer = TruncatedSVD(n_components=n_components, n_iter=7, random_state=seed)
     reduced = np.zeros((len(features.book_ids), n_components))
+    # NOTE: norm="l2"는 축소한 각 책 벡터를 유클리드 길이 1로 맞춘다.
     reduced[nonzero] = normalize(reducer.fit_transform(matrix[nonzero]), norm="l2")
     # NOTE: 음수인 SVD 좌표는 정상이다. 원본 태그 가중치의 비음수 조건을 축소 좌표에 적용하지 않는다.
     return ClusterSpace(features.book_ids.copy(), reduced, int(n_components), float(reducer.explained_variance_ratio_.sum()))
@@ -107,6 +110,8 @@ def compare_cluster_counts(
         sizes = np.bincount(result.labels[result.labels >= 0], minlength=k)
         sampled_labels = result.labels[sample]
         n_labels = len(np.unique(sampled_labels))
+        # NOTE: metric="euclidean"은 현재 군집 공간에서 책 사이의 직선 거리를 사용한다.
+        #       silhouette_score는 표본에 속한 책들의 실루엣 값을 평균한다.
         score = silhouette_score(space.matrix[sample], sampled_labels, metric="euclidean") if 1 < n_labels < len(sample) else np.nan
         rows.append({"k": k, "inertia": result.inertia, "silhouette": score, "sample_books": len(sample),
                      "min_books": int(sizes.min()), "max_books": int(sizes.max()),
@@ -165,6 +170,8 @@ def representative_books(
     rows = []
     for cluster, center in enumerate(clusters.centers):
         positions = np.flatnonzero(clusters.labels == cluster)
+        # NOTE: 첫 입력은 군집에 속한 책들의 좌표, 둘째 입력은 행이 하나인 군집 중심 좌표다.
+        #       책마다 중심까지의 유클리드 거리를 구해 대표 책의 후보 순서를 정한다.
         distances = euclidean_distances(matrix[positions], center.reshape(1, -1)).ravel()
         order = np.lexsort((features.book_ids[positions], distances))
         if not diversify:
@@ -252,6 +259,8 @@ def cluster_diagnostics(
         raise ValueError("표본에 영벡터 또는 미배정 책이 있습니다.")
     if not 1 < len(np.unique(labels)) < len(ids):
         raise ValueError("silhouette에는 2개 이상, 표본 수 미만의 군집이 필요합니다.")
+    # NOTE: silhouette_samples는 평균 대신 책별 값을 반환한다.
+    #       metric="euclidean"으로 각 공간에서 같은 군집과 가장 가까운 다른 군집까지의 평균 거리를 비교한다.
     original = silhouette_samples(features.matrix[positions], labels, metric="euclidean")
     reduced = original if clusters.space is None or clusters.space.n_components is None else silhouette_samples(matrix[positions], labels, metric="euclidean")
     common = original if reference is features else silhouette_samples(reference.matrix[positions], labels, metric="euclidean")

@@ -16,7 +16,7 @@ to-read-fiction, own-to-read, on-kindle, books-owned 등의 명확한 혼합 태
 | basic | 999898 | 783564 | 34250 | 33203 | 0 |
 | extended | 999898 | 678861 | 34250 | 33103 | 0 |
 
-제거 태그의 규칙별 수:
+규칙별로 제거된 태그 수입니다.
 | reason | tags |
 | --- | --- |
 | format | 198 |
@@ -24,17 +24,13 @@ to-read-fiction, own-to-read, on-kindle, books-owned 등의 명확한 혼합 태
 | reading_year | 75 |
 | shelf | 849 |
 
-B1_removed_tags.csv에 실제 제거 태그·사유를 남겼습니다. 노트북의 책별 전후 사례도 확인했습니다.
+제거된 태그와 이유는 `B1_removed_tags.csv`, 책별 정제 전후 사례는 `B1_tag_cleaning.ipynb`에 있습니다.
 태그가 남는지 여부와 양수 count 특징이 남는지 여부는 다릅니다. 후자는 B2에서 확인합니다.
 
 ## 검증과 한계
 기본·확장 규칙, 혼합 태그, 명명된 목록 보존, 입력 불변성·빈 입력·통계 집계를 테스트합니다.
 basic에서 favorites·독서 연도 등이 남는 것은 선택적 규칙의 의도이며 B4에서 extended와 비교합니다.
 명시적 규칙이므로 알려지지 않은 개인 책장 변형은 남을 수 있습니다.
-
-수정 전 결과는 커밋 6e859f5와 그 이전 이력에 보존되어 있습니다. 현재 결과는 수정된 코드·태그 규칙으로 재실행한 값이며 이전 수치와 혼합하지 않습니다.
-
-기존 조원 파일과 .vscode는 수정하지 않았습니다. 노트북은 실제 데이터로 다시 실행했고, 공용 코드 테스트는 작은 인공 데이터로 검사합니다.
 
 ## 참고
 docs/timeline.html, src/bookrec/data/README.md, A3_raw_data_check.ipynb, Goodbooks-10k 데이터(루트 README 출처).

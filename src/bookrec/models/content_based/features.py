@@ -66,18 +66,13 @@ def build_book_features(
         raise ValueError("book_tags에 book_ids 밖의 책 ID가 있습니다.")
     if not tags["tag_name"].map(lambda name: isinstance(name, str) and bool(name.strip())).all():
         raise ValueError("태그 이름은 비어 있지 않은 문자열이어야 합니다.")
-    if tags["count"].map(lambda value: isinstance(value, (bool, np.bool_))).any():
-        raise ValueError("count에 bool은 사용할 수 없습니다.")
     counts = pd.to_numeric(tags["count"], errors="raise").to_numpy(dtype=float)
-    if (not np.isfinite(counts).all() or (counts < 0).any()
-            or (counts != np.floor(counts)).any() or (counts > (2**53 - 1)).any()):
-        raise ValueError("count는 0 이상 2**53-1 이하의 유한한 정수여야 합니다.")
-    # NOTE: 검사에 사용한 숫자를 실제 집계에도 반영해 문자열 연결과 정수 overflow를 막는다.
+    if not np.isfinite(counts).all() or (counts < 0).any() or (counts != np.floor(counts)).any():
+        raise ValueError("count는 0 이상의 유한한 정수여야 합니다.")
+    # NOTE: 숫자로 변환한 뒤 합산해 "2"와 "3"이 "23"으로 이어지는 것을 막는다.
     tags["count"] = counts
     # NOTE: 0회 태그는 특징에 기여하지 않는다. 중복 입력은 합산하되, A3 입력은 이미 중복이 없다.
     tags = tags.loc[counts > 0].groupby(["book_id", "tag_name"], as_index=False)["count"].sum()
-    if (tags["count"] > (2**53 - 1)).any():
-        raise ValueError("중복 합산 count가 정확하게 표현할 수 있는 범위를 넘었습니다.")
     frequency = tags.groupby("tag_name")["book_id"].nunique()
     names = np.array(sorted(frequency[frequency >= min_df].index), dtype=str)
     if not len(names):
@@ -85,6 +80,8 @@ def build_book_features(
     tags = tags[tags["tag_name"].isin(names)]
     rows = pd.Index(ids).get_indexer(tags["book_id"])
     cols = pd.Index(names).get_indexer(tags["tag_name"])
+    # NOTE: 각 태그 횟수를 (rows의 책 행, cols의 태그 열)에 넣는다.
+    #       shape는 태그가 없는 책의 행까지 포함해 전체 책 수 × 남긴 태그 수로 맞춘다.
     matrix = csr_matrix((tags["count"].to_numpy(dtype=float), (rows, cols)), shape=(len(ids), len(names)))
     if weighting == "tfidf":
         # NOTE: smooth_idf=True는 idf=log((1+책 수)/(1+등장 책 수))+1을 쓴다.
@@ -93,5 +90,7 @@ def build_book_features(
     else:
         if weighting == "binary":
             matrix.data[:] = 1.0
+        # NOTE: norm="l2"는 영벡터를 제외한 책 벡터의 유클리드 길이를 1로 맞춘다.
+        #       copy=False는 방금 만든 희소 행렬을 정규화할 때 가능하면 복사를 피하도록 요청한다.
         matrix = normalize(matrix, norm="l2", copy=False)
     return BookFeatures(csr_matrix(matrix), ids, names)

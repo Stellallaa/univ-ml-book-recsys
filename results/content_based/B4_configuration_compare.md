@@ -1,14 +1,11 @@
 # B4 CB 설정 비교
 
 ## 과정과 사전 기준
-basic/extended x binary/count/tfidf x positive/rating의12개와,
-basic/extended TF-IDF의 로그TF 해제 x 두 독자 가중치4개를 먼저 비교합니다.
-그중 평균 점수 상위3개에 min_df=1·5·10을 추가하고 중복은 제외합니다.
-이번 실행은 총25개 후보입니다. 모든 후보의 생성 규칙은 실행 전 노트북에 고정했습니다.
+태그 정제 2종(`basic`, `extended`), 책 가중치 3종(`binary`, `count`, `tfidf`), 독자 가중치 2종(`positive`, `rating`)을 조합한 12개 후보를 먼저 비교합니다. TF-IDF의 로그 TF를 끈 4개 후보도 이 단계에 포함합니다.
+그중 평균 점수 상위 3개는 `min_df`를 1·5·10으로 바꿔 비교합니다. 실행 전에 정한 규칙으로 중복 설정을 제외하고 총 25개를 평가했습니다.
 
-선택은 cold_tune 이력1·3·5·10 NDCG@10 동일 가중 평균 우선,
-동점은 warm_val NDCG@10·설정 ID 순서입니다. 인기순은 기준선이며 CB 선택에서 제외합니다.
-모든 후보는 train으로만 준비하고 기존 val 표본1,000명(seed42), cold_tune2,500명을 사용합니다.
+`cold_tune`의 이력 1·3·5·10개 조건에서 NDCG@10을 같은 비중으로 평균해 후보를 고릅니다. 동점이면 `warm_val` NDCG@10, 설정 ID 순으로 정합니다. 인기순은 비교 기준선입니다.
+모든 후보는 `train`으로 준비하고 기존 독자 `val` 표본 1,000명(시드 42)과 신규 독자 `cold_tune` 2,500명을 평가합니다.
 test·cold_final은 평가하지 않았습니다.
 
 ## 후보 순위
@@ -43,14 +40,14 @@ test·cold_final은 평가하지 않았습니다.
 ## 선택
 후보 C17: {'extended': False, 'weighting': 'binary', 'min_df': 1, 'sublinear_tf': True, 'profile_weighting': 'positive'}
 
-신규 독자 평균 NDCG@10=0.183624, 기존 독자 표본=0.050634.
+검증 NDCG@10은 신규 독자 이력 조건 평균 0.183624, 기존 독자 표본 0.050634입니다.
 이는 탐색한 후보 내 선택이며 전체 가능한 설정의 최적해를 뜻하지 않습니다.
 후속 min_df 실험도 같은 검증 데이터로 선택했으므로 선택 편향이 남습니다.
 
 binary에서는 sublinear_tf 값이 점수에 영향을 주지 않습니다.
 
 ## 같은 독자의 점수 차이
-독자를 단위로2000회 bootstrap(seed42)한 percentile 구간입니다.
+독자 단위로 2,000회 재표집한 백분위수 부트스트랩 구간입니다(시드 42).
 cold_mean은 독자마다 네 이력의 NDCG 평균을 먼저 구합니다.
 | goal | against | users | mean_difference | ci95_low | ci95_high |
 | --- | --- | --- | --- | --- | --- |
@@ -63,16 +60,11 @@ cold_mean은 독자마다 네 이력의 NDCG 평균을 먼저 구합니다.
 
 이 구간은 검증 데이터에 조건부인 비교이며 후보 선택 편향을 보정하지 않습니다.
 최종 평가나 일반화 성능의 확정 근거가 아닙니다.
-1·2위 차이의 구간은0을 포함하므로 두 후보의 확실한 우열을 주장하지 않습니다.
+1·2위 점수 차이의 구간은 0을 포함합니다.
 신규 독자 평균에서는 선택 CB가 인기순보다 낮습니다.
 
 ## 실행
-공식 진입점은 tuning.load_selected_content_based()입니다. JSON이 없거나 필드가 누락되면 오류를 냅니다.
-기본 ContentBasedConfig()는 초기 실험 재현용입니다. 최종 설정으로 조용히 대체하지 않습니다.
+최종 추천기는 `tuning.load_selected_content_based()`로 불러옵니다. 선택 JSON이나 필수 필드가 누락되면 오류가 발생합니다. `ContentBasedConfig()`의 기본값은 초기 실험 재현에 사용합니다.
 전체 비교는 B4_configuration_compare.ipynb를 순서대로 실행합니다.
 CSV는 후보·검증 지표·대체 비율·시간·순위 기록, JSON은 최종 선택과 bootstrap 조건 기록입니다.
-그래프2개는 공용 bookrec.plot_style.save()로 저장합니다.
-
-수정 전 결과는 커밋 6e859f5와 그 이전 이력에 보존되어 있습니다. 현재 결과는 수정된 코드·태그 규칙으로 재실행한 값이며 이전 수치와 혼합하지 않습니다.
-
-기존 조원 파일과 .vscode는 수정하지 않았습니다. 노트북은 실제 데이터로 다시 실행했고, 공용 코드 테스트는 작은 인공 데이터로 검사합니다.
+그래프 2개는 공용 `bookrec.plot_style.save()`로 저장합니다.
