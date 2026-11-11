@@ -9,7 +9,7 @@ from sklearn.preprocessing import normalize
 
 from bookrec.models.base import BOOK_IDS, Recommender
 from bookrec.models.content_based.features import BookFeatures
-from bookrec.models.popularity import PopularityRecommender
+from bookrec.models.baselines.popularity import PopularityRecommender
 
 
 class ContentBasedRecommender(Recommender):
