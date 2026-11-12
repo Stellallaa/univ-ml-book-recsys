@@ -31,6 +31,8 @@ def load_books(raw_dir: Path = RAW_DIR) -> pd.DataFrame:
 def load_book_tags(raw_dir: Path = RAW_DIR) -> pd.DataFrame:
     """책별 태그(book_id, tag_name, count)를 읽는다. count가 음수인 행은 빼고, 중복된 (책, 태그)는 큰 count만 남긴다."""
     ids = pd.read_csv(raw_dir / "books.csv", usecols=["book_id", "goodreads_book_id"])
+    # NOTE: groupby(as_index=False)는 묶은 열(book_id, tag_name)을 인덱스가 아닌 열로 남긴다.
+    #       sort_values(ascending=[True, False])는 book_id 오름차순, 그 안에서 count 내림차순으로 정렬한다.
     return (
         pd.read_csv(raw_dir / "book_tags.csv")
         .query("count >= 0")
