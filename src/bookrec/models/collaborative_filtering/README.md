@@ -50,9 +50,31 @@ evaluate_rmse(mf_rating, split, on="val")
 ```
 
 - `fit_selected_mf(용도, train)`은 `results/collaborative_filtering/C2_selected_config.json`의 설정으로 학습한 모델을 돌려줍니다.
-- 추천용은 학습에 10분 넘게 걸립니다. 처음 한 번만 학습하고 `data/models/`에 저장한 뒤, 다음부터는 저장된 파일을 불러옵니다(`data/`는 커밋하지 않습니다). 설정이 바뀌면 새로 학습합니다. `train`을 바꿨다면 `data/models/`의 파일을 지우고 부릅니다.
+- 추천용은 학습에 10분 넘게 걸립니다. 처음 한 번만 학습하고 `data/models/`에 저장한 뒤, 다음부터는 저장된 파일을 불러옵니다(`data/`는 커밋하지 않습니다). 파일 이름에 설정과 학습 평점 수가 들어 있어, 설정이나 학습 데이터가 바뀌면 새로 학습합니다.
 - 별점 예측용(ALS)은 매번 학습하고 약 3분 걸립니다.
 - 학습 전 모델만 필요하면 `load_selected_mf(용도)`를 씁니다.
 - `score`의 값은 0~1이 아닙니다. hybrid에서 합치기 전에 독자별로 정규화해야 합니다.
 - `score`는 기존 독자와 신규 독자를 구분하지 않고, 넘어온 이력으로 독자 벡터를 다시 계산합니다(fold-in). 이력이 1개여도 동작합니다.
 - 시드가 고정되어 있어 같은 `train`으로 학습하면 항상 같은 모델이 나옵니다.
+
+## 최종 채점 (test, cold_final)
+
+최종 채점은 기준선(`scripts/run_baselines.py --final`)과 같은 방식으로 합니다. val로 고른 설정을 그대로 두고, `train`과 `val`을 합쳐 다시 학습한 뒤 잽니다.
+
+```python
+import pandas as pd
+
+final_train = pd.concat([split.train, split.val], ignore_index=True)
+mf = fit_selected_mf("ranking", final_train)        # hybrid의 최종 채점에도 이 모델을 씁니다
+mf_rating = fit_selected_mf("rating", final_train)
+```
+
+MF의 채점 스크립트는 `scripts/run_mf.py`입니다. 기준선과 같은 형식으로 `results/evaluation/`에 저장합니다.
+
+```bash
+uv run python scripts/run_mf.py          # val, cold_tune → mf_warm_val.csv, mf_cold_tune.csv, mf_rmse_val.csv
+uv run python scripts/run_mf.py --final  # test, cold_final → mf_warm_test.csv, mf_cold_final.csv, mf_rmse_test.csv
+```
+
+- `mf_warm_*`, `mf_cold_*`는 추천용 MF, `mf_rmse_*`는 별점 예측용 MF(ALS)의 점수입니다.
+- `notebooks/collaborative_filtering/S1_mf_final_scores.ipynb`의 값은 `train`만 학습해 잰 사전 측정입니다. 공식 최종 점수는 `results/evaluation/mf_*_test.csv`, `mf_cold_final.csv`입니다.

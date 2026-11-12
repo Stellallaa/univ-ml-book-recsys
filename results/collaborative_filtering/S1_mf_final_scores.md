@@ -1,6 +1,10 @@
-# S1 MF 최종 점수
+# S1 MF 사전 측정 (train만 학습)
 
 노트북: `notebooks/collaborative_filtering/S1_mf_final_scores.ipynb`
+
+**이 문서의 값은 공식 최종 점수가 아닙니다.** `train`만 학습해서 잰 사전 측정입니다.
+공식 최종 점수는 기준선과 같은 방식(`train` + `val`로 다시 학습)으로 `scripts/run_mf.py --final`이 잰 값이고, `results/evaluation/mf_warm_test.csv`, `mf_cold_final.csv`, `mf_rmse_test.csv`와 `docs/parts/mf.md`에 있습니다.
+방식을 바꾼 이유: `test` 채점 때 이력으로 `val` 평점이 넘어오는데, `train`만 학습한 인기순은 그 평점을 쓰지 못해 MF와의 비교가 공정하지 않았습니다.
 
 C2 추가 실험과 C3에서 고른 최종 설정으로 `train`만 학습하고 `test`(기존 독자 전원)와 `cold_final`(신규 독자 2,500명)로 한 번 잰 값입니다. 이 점수로 설정을 바꾸지 않았습니다.
 

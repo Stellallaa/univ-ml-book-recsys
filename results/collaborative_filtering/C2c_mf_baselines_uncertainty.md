@@ -4,27 +4,26 @@
 
 추천용 MF 최종 설정을 같은 독자, 같은 정답으로 다른 방법과 비교했습니다. 모두 `train`으로 학습하고 `val`(독자 5,000명, 시드 42)과 `cold_tune`(2,500명)으로만 쟀습니다.
 
-- 인기순: `train`에서 평점 수가 많은 책 순
-- Goodreads 평점순: `books.csv`의 `average_rating`이 높은 책 순
-- bias: 전체 평균 + 독자 bias + 책 bias (추천 순서는 책 bias 순)
-- CB: 팀원 B의 최종 content-based 설정(`B4_selected_config.json`, B 브랜치 코드)
-- A6 기준선이 아직 `main`에 없어 Goodreads 평점순과 bias는 노트북 안에 직접 만들었습니다.
+- 인기순, Goodreads 평점순, bias: A6 기준선(`bookrec.models.baselines`)을 그대로 썼습니다.
+- CB: 팀원 B의 최종 content-based 설정(`load_selected_content_based`)
+- bias 기준선은 별점만 예측하고 추천 점수가 없어 RMSE만 비교했습니다.
+- A6의 기준선 표(`src/bookrec/evaluation/README.md`)는 val 독자 전원(48,150명)으로 잰 값이라, 5,000명 표본인 이 표의 인기순·Goodreads 평점순 숫자와 조금 다릅니다.
 
 ## 별점 예측 (검증 RMSE)
 | model | val_rmse |
 | --- | --- |
 | 전체 평균 | 0.9865 |
-| bias 기준선 | 0.8659 |
+| bias 기준선 | 0.8616 |
 | MF 별점 예측용 (ALSMatrixFactorization) | 0.8392 |
 
 ## 추천 (NDCG@10)
-| goal | popularity | goodreads_rating | bias | cb | mf_ranking |
-| --- | --- | --- | --- | --- | --- |
-| warm_val | 0.0382 | 0.0018 | 0.0014 | 0.0516 | 0.0718 |
-| cold_tune_1 | 0.2213 | 0.0089 | 0.0074 | 0.1518 | 0.2529 |
-| cold_tune_3 | 0.2213 | 0.0089 | 0.0074 | 0.1682 | 0.2709 |
-| cold_tune_5 | 0.2213 | 0.0089 | 0.0074 | 0.1868 | 0.2784 |
-| cold_tune_10 | 0.2213 | 0.0089 | 0.0074 | 0.2277 | 0.2956 |
+| goal | popularity | goodreads_rating | cb | mf_ranking |
+| --- | --- | --- | --- | --- |
+| warm_val | 0.0382 | 0.0018 | 0.0516 | 0.0718 |
+| cold_tune_1 | 0.2213 | 0.0089 | 0.1518 | 0.2529 |
+| cold_tune_3 | 0.2213 | 0.0089 | 0.1682 | 0.2709 |
+| cold_tune_5 | 0.2213 | 0.0089 | 0.1868 | 0.2784 |
+| cold_tune_10 | 0.2213 | 0.0089 | 0.2277 | 0.2956 |
 
 ## MF와의 차이 (MF - 비교 대상, 독자 단위 bootstrap 2,000번, 시드 42)
 | goal | against | users | mean_difference | ci95_low | ci95_high | significant |
@@ -41,12 +40,6 @@
 | cold_tune_5 | goodreads_rating | 2500 | 0.2695 | 0.2594 | 0.2790 | True |
 | cold_tune_10 | goodreads_rating | 2500 | 0.2867 | 0.2769 | 0.2969 | True |
 | cold_tune_mean | goodreads_rating | 2500 | 0.2655 | 0.2566 | 0.2748 | True |
-| warm_val | bias | 4974 | 0.0704 | 0.0668 | 0.0742 | True |
-| cold_tune_1 | bias | 2500 | 0.2455 | 0.2357 | 0.2551 | True |
-| cold_tune_3 | bias | 2500 | 0.2634 | 0.2537 | 0.2732 | True |
-| cold_tune_5 | bias | 2500 | 0.2709 | 0.2608 | 0.2804 | True |
-| cold_tune_10 | bias | 2500 | 0.2881 | 0.2783 | 0.2984 | True |
-| cold_tune_mean | bias | 2500 | 0.2670 | 0.2580 | 0.2762 | True |
 | warm_val | cb | 4974 | 0.0202 | 0.0168 | 0.0237 | True |
 | cold_tune_1 | cb | 2500 | 0.1012 | 0.0909 | 0.1110 | True |
 | cold_tune_3 | cb | 2500 | 0.1027 | 0.0924 | 0.1131 | True |

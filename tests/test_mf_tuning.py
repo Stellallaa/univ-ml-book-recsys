@@ -134,3 +134,19 @@ def test_fit_selected_mf_reuses_saved_model_and_applies_current_fold_in_reg(tmp_
     assert len(list(tmp_path.glob("*.npz"))) == 1
     assert np.array_equal(first.Q, second.Q)
     assert second.config.fold_in_reg == 1.0
+
+
+def test_fit_selected_mf_retrains_when_training_data_changes(tmp_path):
+    # Given: 추천용 설정으로 train만 학습해 저장해 둔 상태
+    split = _small_split()
+    config = MFConfig(n_factors=4, lr=0.05, n_epochs=3, batch_size=64, neg_ratio=1)
+    path = tmp_path / "selected.json"
+    save_selected({"ranking": {"config": config.__dict__}}, path)
+    trained_on_train = fit_selected_mf("ranking", split.train, cache_dir=tmp_path, path=path)
+
+    # When: 최종 채점처럼 train + val로 부른다
+    trained_on_both = fit_selected_mf("ranking", pd.concat([split.train, split.val], ignore_index=True), cache_dir=tmp_path, path=path)
+
+    # Then: 저장된 모델을 다시 쓰지 않고 새로 학습해, 파일이 둘이고 책 벡터가 다르다
+    assert len(list(tmp_path.glob("*.npz"))) == 2
+    assert not np.array_equal(trained_on_train.Q, trained_on_both.Q)

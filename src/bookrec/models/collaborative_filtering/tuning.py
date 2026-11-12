@@ -94,14 +94,15 @@ def fit_selected_mf(purpose: str, train: pd.DataFrame, cache_dir: Path = CACHE_D
     """최종 설정으로 train을 학습한 모델을 돌려준다. 추천용 MF는 학습 결과를 data/models/에 저장해 두고 다음부터는 불러온다.
 
     추천용 최종 설정은 학습에 10분 넘게 걸려서, 여러 노트북과 hybrid에서 매번 다시 학습하지 않기 위한 함수다.
-    파일 이름에 설정이 들어 있어 설정이 바뀌면 새로 학습한다. train이 바뀌었으면 data/models/의 파일을 지우고 부른다.
+    파일 이름에 설정과 학습 평점 수가 들어 있어, 설정이나 학습 데이터(train / train + val)가 바뀌면 새로 학습한다.
+    평점 수가 같고 내용만 다른 데이터는 구분하지 못한다. 그런 경우에는 data/models/의 파일을 지우고 부른다.
     """
     model = load_selected_mf(purpose, path)
     if not isinstance(model, MatrixFactorization):
         return model.fit(train)
     config = model.config
     cache = Path(cache_dir) / (
-        f"mf_{purpose}_f{config.n_factors}_lr{config.lr}_reg{config.reg}_neg{config.neg_ratio}_e{config.n_epochs}_b{config.batch_size}_s{config.seed}.npz"
+        f"mf_{purpose}_f{config.n_factors}_lr{config.lr}_reg{config.reg}_neg{config.neg_ratio}_e{config.n_epochs}_b{config.batch_size}_s{config.seed}_n{len(train)}.npz"
     )
     if cache.exists():
         loaded = MatrixFactorization.load(cache)
