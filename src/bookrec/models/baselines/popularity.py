@@ -22,5 +22,6 @@ class PopularityRecommender(Recommender):
 
     def score(self, history: pd.DataFrame) -> pd.DataFrame:
         """이력에 나온 독자마다 self.counts를 한 줄씩 복사해 점수표(행 user_id, 열 책1~책10000)를 만든다."""
+        # NOTE: np.tile(배열, (n, 1))은 1차원 배열을 n줄로 쌓아 (n, 10000) 행렬을 만든다.
         user_ids = np.sort(history["user_id"].unique())
         return pd.DataFrame(np.tile(self.counts, (len(user_ids), 1)), index=user_ids, columns=BOOK_IDS)
