@@ -49,7 +49,7 @@ def main():
     ax.set_xticks([1, 3, 5, 10])
     ax.set_xlabel("신규 독자에게 넣은 평점 수")
     ax.set_ylabel("인기순 NDCG@10 (cold_tune 2,500명)")
-    ax.set_title("신규 독자 채점 규칙 수정 전후")
+    ax.set_title("인기순 기준선의 신규 독자 점수: 채점 규칙 수정 전후")
     ax.legend(loc="lower right")
     plot_style.save(fig, "A5_middle_book_fix")
 

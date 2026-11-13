@@ -66,7 +66,7 @@ def main():
     ax.text(0.3 + 5 * 0.04, 0.045, "앞 10권은 모두 추천에서 제외", ha="center", va="top", fontsize=8.5, color="#3a3a38")
     ax.text(0.3 + 13 * 0.04, 0.12, "11번째부터 4점 이상 = 정답", ha="center", va="top", fontsize=8.5)
 
-    ax.set_title("데이터 분할 (A4)", fontsize=14, pad=4)
+    ax.set_title("데이터 분할", fontsize=14, pad=4)
     plot_style.save(fig, "A4_data_split")
 
 
